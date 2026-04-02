@@ -249,9 +249,17 @@ export const UI_TEXT = {
     es: 'La cerveza Corona, la Estrella 0,33, el vino y el agua con gas 0,75 no están incluidos en el menú, por lo que se añadirá la diferencia de precio'
   },
   tastingMenus: { pt: 'Menus de Degustação', en: 'Tasting Menus', es: 'Menús de Degustación' },
+  location: { pt: 'Onde estamos', en: 'Where we are', es: 'Dónde estamos' },
+  openMaps: { pt: 'Abrir no Google Maps', en: 'Open in Google Maps', es: 'Abrir en Google Maps' },
+  prepNote: { 
+    pt: '⏱️ Feito no forno a lenha – pode demorar alguns minutos', 
+    en: '⏱️ Baked in a wood-fired oven – may take a few minutes', 
+    es: '⏱️ Hecho en horno de leña – puede tardar unos minutos' 
+  },
+  selectedCount: { pt: 'Selecionado: {count} empanadas', en: 'Selected: {count} empanadas', es: 'Seleccionado: {count} empanadas' },
   historyText: {
-    pt: 'Chamo-me Tomás Gouveia e este projeto ganhou vida no momento em que eu e a minha mãe decidimos criar algo verdadeiramente nosso. Nascemos e crescemos nas Azenhas do Mar, e foi no coração da nossa aldeia que abrimos o primeiro Al’ Horno. O nosso conceito é simples: empanadas preparadas no calor do forno a lenha, feitas com dedicação e com os sabores que todos adoramos. Mais do que um espaço, é a nossa casa que partilhamos convosco.',
-    en: 'My name is Tomás Gouveia and this project came to life when my mother and I decided to create something truly ours. We were born and raised in Azenhas do Mar, and it was in the heart of our village that we opened the first Al’ Horno. Our concept is simple: empanadas prepared in the heat of a wood-fired oven, made with dedication and with the flavors we all love. More than a space, it is our home that we share with you.',
-    es: 'Mi nombre es Tomás Gouveia y este proyecto cobró vida cuando mi madre y yo decidimos crear algo verdaderamente nuestro. Nacimos y crecimos en Azenhas do Mar, y fue en el corazón de nuestra aldea donde abrimos el primer Al’ Horno. Nuestro concepto es sencillo: empanadas preparadas al calor de un horno de leña, hechas con dedicación y con los sabores que a todos nos encantan. Más que un espacio, es nuestro hogar el que compartimos con vosotros.'
+    pt: 'Chamo-me Tomás Gouveia e este projeto ganhou vida no momento em que eu e a minha mãe decidimos criar algo verdadeiramente nosso. Nascemos e crescemos nas Azenhas do Mar, e foi no coração da nossa aldeia que abrimos o primeiro Al\'Horno. O nosso conceito é simples: empanadas preparadas no calor do forno a lenha, feitas com dedicação e com os sabores que todos adoramos. Mais do que um espaço, é a nossa casa que partilhamos convosco.',
+    en: 'My name is Tomás Gouveia e this project came to life when my mother and I decided to create something truly ours. We were born and raised in Azenhas do Mar, and it was in the heart of our village that we opened the first Al\'Horno. Our concept is simple: empanadas prepared in the heat of a wood-fired oven, made with dedication and with the flavors we all love. More than a space, it is our home that we share with you.',
+    es: 'Mi nombre es Tomás Gouveia y este projeto cobró vida cuando mi madre y yo decidimos crear algo verdadeiramente nosso. Nascemos e crescemos nas Azenhas do Mar, e fue en el coração de nuestra aldea donde abrimos el primeiro Al\'Horno. Nuestro concepto é sencillo: empanadas preparadas al calor de un horno de leña, hechas con dedicación y con os sabores que a todos nos encantan. Mais que um espaço, é o nosso hogar el que compartimos con vosotros.'
   }
 };
