@@ -257,6 +257,26 @@ export const UI_TEXT = {
     es: '⏱️ Hecho en horno de leña – puede tardar unos minutos' 
   },
   selectedCount: { pt: 'Selecionado: {count} empanadas', en: 'Selected: {count} empanadas', es: 'Seleccionado: {count} empanadas' },
+  upsellTitle: {
+    pt: 'Vimos que selecionaste várias empanadas!',
+    en: 'We noticed you selected several empanadas!',
+    es: '¡Vimos que seleccionaste varias empanadas!'
+  },
+  upsellMessage: {
+    pt: 'Que tal aproveitar um menu completo para partilhar e ter melhor valor?',
+    en: 'How about a full menu to share and get better value?',
+    es: '¿Qué tal aprovechar un menú completo para compartir y tener mejor valor?'
+  },
+  menuSuggestion6: {
+    pt: '6 empanadas 🔥 recomendado',
+    en: '6 empanadas 🔥 recommended',
+    es: '6 empanadas 🔥 recomendado'
+  },
+  menuSuggestion12: {
+    pt: '12 empanadas 💰 melhor valor',
+    en: '12 empanadas 💰 best value',
+    es: '12 empanadas 💰 mejor valor'
+  },
   historyText: {
     pt: 'Chamo-me Tomás Gouveia e este projeto ganhou vida no momento em que eu e a minha mãe decidimos criar algo verdadeiramente nosso. Nascemos e crescemos nas Azenhas do Mar, e foi no coração da nossa aldeia que abrimos o primeiro Al\'Horno. O nosso conceito é simples: empanadas preparadas no calor do forno a lenha, feitas com dedicação e com os sabores que todos adoramos. Mais do que um espaço, é a nossa casa que partilhamos convosco.',
     en: 'My name is Tomás Gouveia e this project came to life when my mother and I decided to create something truly ours. We were born and raised in Azenhas do Mar, and it was in the heart of our village that we opened the first Al\'Horno. Our concept is simple: empanadas prepared in the heat of a wood-fired oven, made with dedication and with the flavors we all love. More than a space, it is our home that we share with you.',

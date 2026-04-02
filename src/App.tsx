@@ -304,8 +304,46 @@ export default function App() {
                 <motion.div 
                   initial={{ y: 100 }}
                   animate={{ y: 0 }}
-                  className="fixed bottom-20 left-4 right-4 z-40"
+                  className="fixed bottom-20 left-4 right-4 z-40 flex flex-col gap-2"
                 >
+                  {totalSelected > 3 && (
+                    <motion.div 
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      className="bg-white/95 backdrop-blur-md p-4 rounded-2xl shadow-xl border border-brand-primary/20"
+                    >
+                      <div className="flex items-start gap-3 mb-3">
+                        <div className="p-2 bg-brand-primary/10 rounded-xl text-brand-primary">
+                          <Star size={18} fill="currentColor" />
+                        </div>
+                        <div>
+                          <p className="text-xs font-bold text-brand-text leading-tight">
+                            {UI_TEXT.upsellTitle[lang as Language]}
+                          </p>
+                          <p className="text-[10px] text-brand-text/70 mt-0.5">
+                            {UI_TEXT.upsellMessage[lang as Language]}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-1 gap-2">
+                        <button 
+                          onClick={() => navigateTo('menus')}
+                          className="flex items-center justify-between p-2 bg-brand-primary/5 border border-brand-primary/10 rounded-xl text-[10px] font-bold text-brand-text hover:bg-brand-primary/10 transition-colors"
+                        >
+                          <span>{UI_TEXT.menuSuggestion6[lang as Language]}</span>
+                          <ArrowRight size={12} className="text-brand-primary" />
+                        </button>
+                        <button 
+                          onClick={() => navigateTo('menus')}
+                          className="flex items-center justify-between p-2 bg-brand-primary/5 border border-brand-primary/10 rounded-xl text-[10px] font-bold text-brand-text hover:bg-brand-primary/10 transition-colors"
+                        >
+                          <span>{UI_TEXT.menuSuggestion12[lang as Language]}</span>
+                          <ArrowRight size={12} className="text-brand-primary" />
+                        </button>
+                      </div>
+                    </motion.div>
+                  )}
+
                   <div className="bg-brand-primary text-white px-4 py-3 rounded-2xl shadow-2xl flex items-center justify-between border border-white/20 backdrop-blur-md">
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-bold">
