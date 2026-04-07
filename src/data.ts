@@ -278,9 +278,9 @@ export const UI_TEXT = {
     es: '12 empanadas 💰 mejor valor'
   },
   takeaway: {
-    pt: 'Takeaway / Reservas / Festas',
-    en: 'Takeaway / Reservations / Parties',
-    es: 'Takeaway / Reservas / Fiestas'
+    pt: 'Takeaway / Reservas',
+    en: 'Takeaway / Reservations',
+    es: 'Takeaway / Reservas'
   },
   historyText: {
     pt: 'Chamo-me Tomás Gouveia e este projeto ganhou vida no momento em que eu e a minha mãe decidimos criar algo verdadeiramente nosso. Nascemos e crescemos nas Azenhas do Mar, e foi no coração da nossa aldeia que abrimos o primeiro Al\'Horno. O nosso conceito é simples: empanadas preparadas no calor do forno a lenha, feitas com dedicação e com os sabores que todos adoramos. Mais do que um espaço, é a nossa casa que partilhamos convosco.',
