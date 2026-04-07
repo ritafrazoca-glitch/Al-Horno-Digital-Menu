@@ -19,7 +19,8 @@ import {
   MapPin,
   Plus,
   Minus,
-  ExternalLink
+  ExternalLink,
+  Instagram
 } from 'lucide-react';
 import { 
   Language, 
@@ -206,6 +207,21 @@ export default function App() {
                   label={UI_TEXT.sections.history[lang]} 
                   onClick={() => navigateTo('history')} 
                 />
+                
+                <a 
+                  href="https://www.instagram.com/al.horno_pt/" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="w-full p-3.5 rounded-2xl flex items-center justify-between transition-all active:scale-[0.98] group shadow-sm bg-gradient-to-r from-purple-600 to-pink-500 text-white mt-2"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-xl bg-white/20">
+                      <Instagram size={18} strokeWidth={1.5} />
+                    </div>
+                    <span className="text-lg font-bold">{UI_TEXT.takeaway[lang as Language]}</span>
+                  </div>
+                  <ExternalLink size={16} className="text-white/60 transition-transform group-hover:translate-x-1" />
+                </a>
               </div>
 
               <div className="pt-4">

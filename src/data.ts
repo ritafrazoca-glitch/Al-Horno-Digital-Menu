@@ -81,7 +81,7 @@ export const EMPANADAS: Empanada[] = [
     description: {
       pt: 'Atum, cebola, pimentos, ovo cozido, azeitonas verdes, tomate fresco e curgete',
       en: 'Tuna, onion, bell peppers, hard-boiled egg, green olives, fresh tomatoes, and zucchini',
-      es: 'Atún, cebolla, pimientos, huevo cocido, aceitunas verdes, tomate fresco y calabacín'
+      es: 'Atún, cebolla, pimientos, huevo cozido, aceitunas verdes, tomate fresco y calabacín'
     }
   },
   {
@@ -276,6 +276,11 @@ export const UI_TEXT = {
     pt: '12 empanadas 💰 melhor valor',
     en: '12 empanadas 💰 best value',
     es: '12 empanadas 💰 mejor valor'
+  },
+  takeaway: {
+    pt: 'Takeaway / Reservas / Festas',
+    en: 'Takeaway / Reservations / Parties',
+    es: 'Takeaway / Reservas / Fiestas'
   },
   historyText: {
     pt: 'Chamo-me Tomás Gouveia e este projeto ganhou vida no momento em que eu e a minha mãe decidimos criar algo verdadeiramente nosso. Nascemos e crescemos nas Azenhas do Mar, e foi no coração da nossa aldeia que abrimos o primeiro Al\'Horno. O nosso conceito é simples: empanadas preparadas no calor do forno a lenha, feitas com dedicação e com os sabores que todos adoramos. Mais do que um espaço, é a nossa casa que partilhamos convosco.',
