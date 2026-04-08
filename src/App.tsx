@@ -11,14 +11,10 @@ import {
   Flame, 
   Utensils, 
   Beer, 
-  BookOpen, 
   History,
   Star,
   ArrowRight,
-  Menu,
   MapPin,
-  Plus,
-  Minus,
   ExternalLink,
   Instagram
 } from 'lucide-react';
@@ -37,21 +33,6 @@ type View = 'language' | 'home' | 'empanadas' | 'drinks' | 'menus' | 'history';
 export default function App() {
   const [lang, setLang] = useState<Language | null>(null);
   const [view, setView] = useState<View>('language');
-  const [selectedEmpanadas, setSelectedEmpanadas] = useState<Record<string, number>>({});
-
-  const toggleEmpanada = (code: string, delta: number) => {
-    setSelectedEmpanadas(prev => {
-      const current = prev[code] || 0;
-      const next = Math.max(0, current + delta);
-      if (next === 0) {
-        const { [code]: _, ...rest } = prev;
-        return rest;
-      }
-      return { ...prev, [code]: next };
-    });
-  };
-
-  const totalSelected = Object.values(selectedEmpanadas).reduce((a: number, b: number) => a + b, 0) as number;
 
   // Handle language selection
   const selectLanguage = (l: Language) => {
@@ -163,34 +144,11 @@ export default function App() {
               exit={{ opacity: 0, y: -10 }}
               className="space-y-10 flex-grow flex flex-col justify-center py-4"
             >
-              <div className="text-center">
-                <motion.div 
-                  initial={{ scale: 0.9 }}
-                  animate={{ scale: 1 }}
-                  className="mb-6"
-                >
-                  <img 
-                    src="/logo.png" 
-                    alt="Al'Horno Logo" 
-                    className="w-28 h-auto mx-auto"
-                    onError={(e) => {
-                      const target = e.target as HTMLImageElement;
-                      if (target.src.includes('logo.png.png')) {
-                         target.src = "https://cdn-icons-png.flaticon.com/512/1041/1041916.png";
-                      } else {
-                         target.src = "/logo.png.png";
-                      }
-                    }}
-                  />
-                </motion.div>
-              </div>
-
               <div className="grid grid-cols-1 gap-3">
                 <MenuButton 
                   icon={<Flame size={18} strokeWidth={1.5} />} 
                   label={UI_TEXT.sections.empanadas[lang]} 
                   onClick={() => navigateTo('empanadas')} 
-                  primary
                 />
                 <MenuButton 
                   icon={<Beer size={18} strokeWidth={1.5} />} 
@@ -266,11 +224,7 @@ export default function App() {
                 {EMPANADAS.map((item) => (
                   <div 
                     key={item.code} 
-                    onClick={() => toggleEmpanada(item.code, 1)}
-                    className={cn(
-                      "glass-card p-3 relative overflow-hidden group transition-all active:scale-[0.98] cursor-pointer",
-                      selectedEmpanadas[item.code] ? "ring-2 ring-brand-primary bg-brand-primary/5" : ""
-                    )}
+                    className="glass-card p-3 relative overflow-hidden group transition-all"
                   >
                     {item.popular && (
                       <div className="absolute top-0 right-0 bg-brand-primary text-white text-[8px] font-bold px-1.5 py-0.5 rounded-bl-lg flex items-center gap-0.5">
@@ -294,87 +248,10 @@ export default function App() {
                           {item.description[lang]}
                         </p>
                       </div>
-                      
-                      {selectedEmpanadas[item.code] && (
-                        <div className="flex flex-col items-center gap-1">
-                          <div className="bg-brand-primary text-white w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold">
-                            {selectedEmpanadas[item.code]}
-                          </div>
-                          <button 
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              toggleEmpanada(item.code, -1);
-                            }}
-                            className="p-1 rounded-md bg-brand-accent/10 text-brand-primary hover:bg-brand-accent/20"
-                          >
-                            <Minus size={12} />
-                          </button>
-                        </div>
-                      )}
                     </div>
                   </div>
                 ))}
               </div>
-
-              {totalSelected > 0 && (
-                <motion.div 
-                  initial={{ y: 100 }}
-                  animate={{ y: 0 }}
-                  className="fixed bottom-20 left-4 right-4 z-40 flex flex-col gap-2"
-                >
-                  {totalSelected > 3 && (
-                    <motion.div 
-                      initial={{ opacity: 0, scale: 0.95 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      className="bg-white/95 backdrop-blur-md p-4 rounded-2xl shadow-xl border border-brand-primary/20"
-                    >
-                      <div className="flex items-start gap-3 mb-3">
-                        <div className="p-2 bg-brand-primary/10 rounded-xl text-brand-primary">
-                          <Star size={18} fill="currentColor" />
-                        </div>
-                        <div>
-                          <p className="text-xs font-bold text-brand-text leading-tight">
-                            {UI_TEXT.upsellTitle[lang as Language]}
-                          </p>
-                          <p className="text-[10px] text-brand-text/70 mt-0.5">
-                            {UI_TEXT.upsellMessage[lang as Language]}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="grid grid-cols-1 gap-2">
-                        <button 
-                          onClick={() => navigateTo('menus')}
-                          className="flex items-center justify-between p-2 bg-brand-primary/5 border border-brand-primary/10 rounded-xl text-[10px] font-bold text-brand-text hover:bg-brand-primary/10 transition-colors"
-                        >
-                          <span>{UI_TEXT.menuSuggestion6[lang as Language]}</span>
-                          <ArrowRight size={12} className="text-brand-primary" />
-                        </button>
-                        <button 
-                          onClick={() => navigateTo('menus')}
-                          className="flex items-center justify-between p-2 bg-brand-primary/5 border border-brand-primary/10 rounded-xl text-[10px] font-bold text-brand-text hover:bg-brand-primary/10 transition-colors"
-                        >
-                          <span>{UI_TEXT.menuSuggestion12[lang as Language]}</span>
-                          <ArrowRight size={12} className="text-brand-primary" />
-                        </button>
-                      </div>
-                    </motion.div>
-                  )}
-
-                  <div className="bg-brand-primary text-white px-4 py-3 rounded-2xl shadow-2xl flex items-center justify-between border border-white/20 backdrop-blur-md">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-bold">
-                        👉 {UI_TEXT.selectedCount[lang as Language].replace('{count}', totalSelected.toString())}
-                      </span>
-                    </div>
-                    <button 
-                      onClick={() => setSelectedEmpanadas({})}
-                      className="text-[10px] uppercase tracking-widest font-bold bg-white/20 px-2 py-1 rounded-lg"
-                    >
-                      Limpar
-                    </button>
-                  </div>
-                </motion.div>
-              )}
             </motion.div>
           )}
 
