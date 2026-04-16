@@ -25,7 +25,9 @@ import {
   ChevronRight,
   Sparkles,
   ShoppingBag,
-  Tag
+  Tag,
+  X,
+  LayoutList
 } from 'lucide-react';
 import { 
   Language, 
@@ -56,7 +58,7 @@ interface CustomizingMenu {
   menu: MenuOption;
   flavors: Record<string, number>;
   drinks: Record<string, number>;
-  step: 'flavors' | 'drinks';
+  step: 'flavors' | 'drinks' | 'summary';
   isEditing?: boolean;
   cartId?: string;
 }
@@ -263,14 +265,27 @@ export default function App() {
           window.scrollTo(0, 0);
           return;
         }
-        // Fall through to finalize if no drinks needed
+        setCustomizingMenu(prev => prev ? { ...prev, step: 'summary' } : null);
+        window.scrollTo(0, 0);
+        return;
       } else {
         return;
       }
     }
 
-    const currentDrinkCount = Object.values(drinks).reduce((a, b) => (a as number) + (b as number), 0);
-    if (currentDrinkCount < menu.drinkCapacity) return;
+    if (step === 'drinks') {
+      const currentDrinkCount = Object.values(drinks).reduce((a, b) => (a as number) + (b as number), 0);
+      if (currentDrinkCount >= menu.drinkCapacity) {
+        setCustomizingMenu(prev => prev ? { ...prev, step: 'summary' } : null);
+        window.scrollTo(0, 0);
+        return;
+      } else {
+        return;
+      }
+    }
+
+    // Step is 'summary'
+    const currentDrinkCountSummary = Object.values(drinks).reduce((a, b) => (a as number) + (b as number), 0);
 
     // Calculate price: Base Menu + [Premium Upcharges for Included] + [Full Price for Extras]
     // To give the best deal, we assign "included" slots to the most expensive drinks first
@@ -329,6 +344,36 @@ export default function App() {
   const currentDrinkCount = useMemo(() => {
     if (!customizingMenu) return 0;
     return Object.values(customizingMenu.drinks).reduce((a, b) => (a as number) + (b as number), 0);
+  }, [customizingMenu]);
+
+  const customizingMenuPrice = useMemo(() => {
+    if (!customizingMenu) return 0;
+    const { menu, drinks } = customizingMenu;
+    
+    let extraCost = 0;
+    const allSelectedDrinks: Drink[] = [];
+    Object.entries(drinks).forEach(([drinkId, count]) => {
+      const drink = DRINKS.flatMap(c => c.items).find(d => d.id === drinkId);
+      if (drink) {
+        for (let i = 0; i < (count as number); i++) {
+          allSelectedDrinks.push(drink);
+        }
+      }
+    });
+
+    allSelectedDrinks.sort((a, b) => b.numericPrice - a.numericPrice);
+
+    allSelectedDrinks.forEach((drink, index) => {
+      if (index < menu.drinkCapacity) {
+        if (drink.premium) {
+          extraCost += (drink.numericPrice - 2.5);
+        }
+      } else {
+        extraCost += drink.numericPrice;
+      }
+    });
+
+    return menu.numericPrice + extraCost;
   }, [customizingMenu]);
 
   const cartTotal = useMemo(() => {
@@ -711,23 +756,58 @@ export default function App() {
           {view === 'customize-menu' && customizingMenu && (
             <motion.div
               key="customize-menu"
-              initial={{ opacity: 0, scale: 0.95 }}
+              initial={{ opacity: 0, scale: 0.98 }}
               animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="space-y-6 pb-32"
+              exit={{ opacity: 0, scale: 0.98 }}
+              className="flex flex-col min-h-[calc(100vh-120px)] relative"
             >
-              <div className="sticky top-12 z-40 -mx-5 px-5 py-4 bg-brand-bg/95 backdrop-blur-md border-b border-brand-accent/10 flex flex-col gap-3">
+              {/* Step Indicator */}
+              <div className="flex items-center justify-between mb-8 px-2">
+                {[
+                  { id: 'flavors', icon: <Flame size={14} />, label: UI_TEXT.sections.empanadas[lang] },
+                  { id: 'drinks', icon: <Beer size={14} />, label: UI_TEXT.sections.drinks[lang] },
+                  { id: 'summary', icon: <LayoutList size={14} />, label: UI_TEXT.customization.summary[lang] }
+                ].map((s, idx) => (
+                  <React.Fragment key={s.id}>
+                    <div className="flex flex-col items-center gap-1.5 flex-1 group">
+                      <div className={cn(
+                        "w-8 h-8 rounded-full flex items-center justify-center transition-all duration-500",
+                        customizingMenu.step === s.id ? "bg-brand-primary text-white shadow-lg scale-110" : "bg-white text-brand-text/30 border border-brand-accent/20"
+                      )}>
+                        {s.icon}
+                      </div>
+                      <span className={cn(
+                        "text-[9px] font-black uppercase tracking-tighter transition-all duration-300",
+                        customizingMenu.step === s.id ? "text-brand-primary opacity-100" : "text-brand-text/30 opacity-60"
+                      )}>
+                        {s.label}
+                      </span>
+                    </div>
+                    {idx < 2 && (
+                      <div className={cn(
+                        "h-[1px] flex-grow mx-2 mb-4 transition-colors duration-500",
+                        idx === 0 && (customizingMenu.step === 'drinks' || customizingMenu.step === 'summary') ? "bg-brand-primary" : "bg-brand-accent/20"
+                      )}></div>
+                    )}
+                  </React.Fragment>
+                ))}
+              </div>
+
+              {/* Dynamic Step Header */}
+              <div className="glass-card p-5 mb-6 bg-gradient-to-br from-white to-brand-accent/5 border-brand-primary/10">
                 <div className="flex items-center justify-between">
                   <div className="flex-grow">
-                    <h2 className="text-xl font-black text-brand-text italic uppercase leading-tight">
+                    <h2 className="text-2xl font-black text-brand-text italic uppercase leading-none mb-1">
                       {customizingMenu.step === 'flavors' 
                         ? UI_TEXT.customization.choose[lang].replace('{count}', customizingMenu.menu.capacity.toString())
-                        : UI_TEXT.customization.chooseDrinks[lang].replace('{count}', customizingMenu.menu.drinkCapacity.toString())
+                        : customizingMenu.step === 'drinks'
+                        ? UI_TEXT.customization.chooseDrinks[lang].replace('{count}', customizingMenu.menu.drinkCapacity.toString())
+                        : UI_TEXT.customization.summary[lang]
                       }
                     </h2>
                     <p className={cn(
-                      "text-sm font-bold flex items-center gap-2",
-                      (customizingMenu.step === 'flavors' ? currentSelectionCount === customizingMenu.menu.capacity : currentDrinkCount >= customizingMenu.menu.drinkCapacity) 
+                      "text-xs font-black uppercase tracking-widest flex items-center gap-1.5",
+                      (customizingMenu.step === 'flavors' ? currentSelectionCount === customizingMenu.menu.capacity : customizingMenu.step === 'drinks' ? currentDrinkCount >= customizingMenu.menu.drinkCapacity : true) 
                         ? "text-green-600" 
                         : "text-brand-primary"
                     )}>
@@ -737,7 +817,7 @@ export default function App() {
                         ) : (
                           UI_TEXT.customization.remaining[lang].replace('{count}', (customizingMenu.menu.capacity - currentSelectionCount).toString())
                         )
-                      ) : (
+                      ) : customizingMenu.step === 'drinks' ? (
                         currentDrinkCount >= customizingMenu.menu.drinkCapacity ? (
                           <><Sparkles size={14} /> {currentDrinkCount > customizingMenu.menu.drinkCapacity ? UI_TEXT.customization.drinksExtra[lang] : UI_TEXT.customization.completed[lang]}</>
                         ) : (
@@ -745,192 +825,296 @@ export default function App() {
                             .replace('{current}', currentDrinkCount.toString())
                             .replace('{total}', customizingMenu.menu.drinkCapacity.toString())
                         )
+                      ) : (
+                        <span className="opacity-50">{customizingMenu.menu.title[lang]}</span>
                       )}
                     </p>
                   </div>
-                  <div className="w-14 h-14 rounded-full border-4 border-brand-accent/10 flex items-center justify-center relative shadow-inner shrink-0">
-                    <svg className="absolute -rotate-90 w-full h-full">
-                      <circle
-                        cx="28" cy="28" r="24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="4"
-                        className="text-brand-primary"
-                        strokeDasharray={150.8}
-                        strokeDashoffset={150.8 - (150.8 * Math.min(1, (customizingMenu.step === 'flavors' ? currentSelectionCount : currentDrinkCount) / (customizingMenu.step === 'flavors' ? customizingMenu.menu.capacity : customizingMenu.menu.drinkCapacity)))}
-                        strokeLinecap="round"
-                        style={{ transition: 'stroke-dashoffset 0.4s cubic-bezier(0.4, 0, 0.2, 1)' }}
-                      />
-                    </svg>
-                    <span className="text-sm font-black text-brand-text">
-                      {customizingMenu.step === 'flavors' ? `${currentSelectionCount}/${customizingMenu.menu.capacity}` : `${currentDrinkCount}/${customizingMenu.menu.drinkCapacity}`}
-                    </span>
-                  </div>
+                  
+                  {customizingMenu.step !== 'summary' && (
+                    <div className="w-14 h-14 rounded-full border-4 border-brand-accent/10 flex items-center justify-center relative shadow-inner shrink-0 bg-white">
+                      <svg className="absolute -rotate-90 w-full h-full">
+                        <circle
+                          cx="28" cy="28" r="24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                          className="text-brand-primary/10"
+                        />
+                        <circle
+                          cx="28" cy="28" r="24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                          className="text-brand-primary"
+                          strokeDasharray={150.8}
+                          strokeDashoffset={150.8 - (150.8 * Math.min(1, (customizingMenu.step === 'flavors' ? currentSelectionCount : currentDrinkCount) / (customizingMenu.step === 'flavors' ? customizingMenu.menu.capacity : customizingMenu.menu.drinkCapacity)))}
+                          strokeLinecap="round"
+                          style={{ transition: 'stroke-dashoffset 0.4s cubic-bezier(0.4, 0, 0.2, 1)' }}
+                        />
+                      </svg>
+                      <span className="text-sm font-black text-brand-text">
+                        {customizingMenu.step === 'flavors' ? `${currentSelectionCount}/${customizingMenu.menu.capacity}` : `${currentDrinkCount}/${customizingMenu.menu.drinkCapacity}`}
+                      </span>
+                    </div>
+                  )}
                 </div>
 
                 {customizingMenu.step === 'flavors' && (
-                  <div className="flex gap-2">
-                    <button 
-                      onClick={autoFillFlavors}
-                      className="flex-grow bg-white text-brand-primary border-2 border-brand-primary/20 px-4 py-2.5 rounded-2xl text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 active:scale-95 shadow-sm transition-all"
-                    >
-                      <Sparkles size={14} className="text-orange-500" />
-                      {UI_TEXT.customization.autoFill[lang]}
-                    </button>
-                  </div>
+                  <button 
+                    onClick={autoFillFlavors}
+                    className="mt-4 w-full bg-white text-brand-primary border-2 border-brand-primary/20 px-4 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-wider flex items-center justify-center gap-2 active:scale-95 shadow-sm transition-all"
+                  >
+                    <Sparkles size={14} className="text-orange-500" />
+                    {UI_TEXT.customization.autoFill[lang]}
+                  </button>
                 )}
-
+                
                 {customizingMenu.step === 'drinks' && (
-                  <div className="px-3 py-2 bg-orange-50 border border-orange-200 rounded-xl text-[10px] text-orange-800 font-medium">
+                  <div className="mt-4 px-3 py-2 bg-orange-50 border border-orange-200 rounded-xl text-[10px] text-orange-800 font-medium leading-tight">
                     <p className="flex items-center gap-2">
-                       <Sparkles size={12} className="text-orange-500" />
+                       <Sparkles size={12} className="text-orange-500 shrink-0" />
                        {UI_TEXT.customization.premiumNotice[lang]}
                     </p>
                   </div>
                 )}
               </div>
 
-              {customizingMenu.step === 'flavors' ? (
-                <div className="grid grid-cols-1 gap-3">
-                  {EMPANADAS.map((emp) => (
-                    <div key={emp.code} className="glass-card p-3 flex items-center gap-3 relative overflow-hidden group">
-                      {emp.popular && (
-                        <div className="absolute top-0 right-0 bg-brand-primary text-white text-[7px] font-black px-2 py-0.5 rounded-bl-lg uppercase tracking-tighter">
-                          {UI_TEXT.mostPopular[lang]}
+              {/* Step Content */}
+              <div className="pb-40">
+                {customizingMenu.step === 'flavors' && (
+                  <div className="grid grid-cols-1 gap-3">
+                    {EMPANADAS.map((emp) => (
+                      <div key={emp.code} className="glass-card p-3 flex items-center gap-3 relative overflow-hidden group">
+                        {emp.popular && (
+                          <div className="absolute top-0 right-0 bg-brand-primary text-white text-[7px] font-black px-2 py-0.5 rounded-bl-lg uppercase tracking-tighter">
+                            {UI_TEXT.mostPopular[lang]}
+                          </div>
+                        )}
+                        <div className="w-10 h-10 rounded-full bg-brand-primary/10 text-brand-primary flex flex-shrink-0 items-center justify-center font-black shadow-inner border border-brand-primary/5">
+                          {emp.code}
+                        </div>
+                        <div className="flex-grow min-w-0">
+                           <div className="flex items-center gap-1.5 flex-wrap">
+                              <h4 className="font-bold text-sm text-brand-text truncate leading-tight">{emp.name[lang]}</h4>
+                              <div className="flex gap-0.5">
+                                {emp.spicy && <span className="text-[10px]">🌶️</span>}
+                                {emp.vegetarian && <span className="text-[10px]">🥬</span>}
+                              </div>
+                           </div>
+                           <p className="text-[10px] text-brand-text/50 truncate italic mt-0.5">{emp.description[lang]}</p>
+                        </div>
+                        <div className="flex items-center gap-2 bg-brand-accent/5 p-1 rounded-xl border border-brand-accent/10">
+                          <button 
+                            onClick={() => removeFlavor(emp.code)}
+                            className={cn(
+                              "w-8 h-8 rounded-lg flex items-center justify-center transition-all",
+                              customizingMenu.flavors[emp.code] ? "bg-white text-brand-primary shadow-sm active:scale-90" : "text-brand-text/10"
+                            )}
+                            disabled={!customizingMenu.flavors[emp.code]}
+                          >
+                            <Minus size={16} />
+                          </button>
+                          <span className={cn(
+                            "w-4 text-center font-black text-sm tabular-nums",
+                            customizingMenu.flavors[emp.code] ? "text-brand-primary" : "text-brand-text/10"
+                          )}>
+                            {customizingMenu.flavors[emp.code] || 0}
+                          </span>
+                          <button 
+                            onClick={() => addFlavor(emp.code)}
+                            className={cn(
+                              "w-8 h-8 rounded-lg flex items-center justify-center shadow-sm active:scale-90 transition-all",
+                              currentSelectionCount >= customizingMenu.menu.capacity ? "bg-brand-accent/20 text-brand-text/20" : "bg-brand-primary text-white"
+                            )}
+                            disabled={currentSelectionCount >= customizingMenu.menu.capacity}
+                          >
+                            <Plus size={16} />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {customizingMenu.step === 'drinks' && (
+                  <div className="space-y-6">
+                    {DRINKS.map((category, idx) => (
+                      <div key={idx} className="space-y-3">
+                        <h3 className="text-brand-primary font-bold text-[10px] uppercase tracking-widest px-1">
+                          {category.title[lang]}
+                        </h3>
+                        <div className="grid grid-cols-1 gap-2">
+                          {category.items.map((drink) => (
+                            <div key={drink.id} className="glass-card p-3 flex flex-col gap-2 relative">
+                              <div className="flex justify-between items-center">
+                                <div className="flex flex-col">
+                                  <span className="text-sm font-bold text-brand-text leading-tight">{drink.name[lang]}</span>
+                                  {drink.premium && (
+                                    <span className="text-[9px] font-black text-brand-primary uppercase tracking-tighter mt-0.5">
+                                      + {(drink.numericPrice - 2.5).toFixed(2)} € {UI_TEXT.customization.extra[lang]}
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="flex items-center gap-2 bg-brand-accent/5 p-1 rounded-lg border border-brand-accent/5">
+                                  <button 
+                                    onClick={() => removeDrinkFromMenu(drink.id)}
+                                    className={cn(
+                                      "w-7 h-7 rounded-md flex items-center justify-center transition-all",
+                                      customizingMenu.drinks[drink.id] ? "bg-white text-brand-primary shadow-sm pointer-events-auto" : "text-brand-text/10"
+                                    )}
+                                  >
+                                    <Minus size={14} />
+                                  </button>
+                                  <span className={cn(
+                                    "min-w-[14px] text-center font-bold text-xs tabular-nums",
+                                    customizingMenu.drinks[drink.id] ? "text-brand-primary" : "text-brand-text/10"
+                                  )}>
+                                    {customizingMenu.drinks[drink.id] || 0}
+                                  </span>
+                                  <button 
+                                    onClick={() => addDrinkToMenu(drink.id)}
+                                    className="w-7 h-7 rounded-md bg-brand-primary text-white flex items-center justify-center shadow-sm active:scale-90 transition-all"
+                                  >
+                                    <Plus size={14} />
+                                  </button>
+                                </div>
+                              </div>
+                              {drink.premium && customizingMenu.drinks[drink.id] && (
+                                <p className="text-[9px] text-orange-600 font-bold bg-orange-50 p-2 rounded-lg border border-orange-100 italic">
+                                  {UI_TEXT.customization.premiumWarning[lang]}
+                                </p>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {customizingMenu.step === 'summary' && (
+                  <div className="space-y-4">
+                    <div className="glass-card p-5 space-y-4">
+                      <div>
+                        <h4 className="text-[10px] font-black uppercase text-brand-primary tracking-widest mb-3 border-b border-brand-accent/10 pb-1">
+                          {UI_TEXT.sections.empanadas[lang]}
+                        </h4>
+                        <div className="space-y-2">
+                           {Object.entries(customizingMenu.flavors).map(([code, count]) => {
+                             const emp = EMPANADAS.find(e => e.code === code);
+                             return (
+                               <div key={code} className="flex justify-between items-center text-sm">
+                                 <span className="font-bold text-brand-text">{emp?.name[lang]}</span>
+                                 <span className="font-black text-brand-primary">x{count}</span>
+                               </div>
+                             );
+                           })}
+                        </div>
+                      </div>
+
+                      {customizingMenu.menu.drinkCapacity > 0 && (
+                        <div>
+                          <h4 className="text-[10px] font-black uppercase text-brand-primary tracking-widest mb-3 border-b border-brand-accent/10 pb-1">
+                            {UI_TEXT.sections.drinks[lang]}
+                          </h4>
+                          <div className="space-y-2">
+                             {Object.entries(customizingMenu.drinks).map(([id, count]) => {
+                               const drink = DRINKS.flatMap(c => c.items).find(d => d.id === id);
+                               return (
+                                 <div key={id} className="flex justify-between items-center text-sm">
+                                   <div className="flex flex-col">
+                                     <span className="font-bold text-brand-text">{drink?.name[lang]}</span>
+                                     {drink?.premium && (
+                                       <span className="text-[9px] text-brand-primary uppercase font-black tracking-tighter italic">
+                                         + Premium Extra
+                                       </span>
+                                     )}
+                                   </div>
+                                   <span className="font-black text-brand-primary">x{count}</span>
+                                 </div>
+                               );
+                             })}
+                          </div>
                         </div>
                       )}
-                      <div className="w-10 h-10 rounded-full bg-brand-primary/10 text-brand-primary flex flex-shrink-0 items-center justify-center font-black shadow-inner border border-brand-primary/5">
-                        {emp.code}
-                      </div>
-                      <div className="flex-grow min-w-0">
-                         <div className="flex items-center gap-1.5 flex-wrap">
-                            <h4 className="font-bold text-sm text-brand-text truncate leading-tight">{emp.name[lang]}</h4>
-                            <div className="flex gap-0.5">
-                              {emp.spicy && <span className="text-[10px]">🌶️</span>}
-                              {emp.vegetarian && <span className="text-[10px]">🥬</span>}
-                            </div>
-                         </div>
-                         <p className="text-[10px] text-brand-text/50 truncate italic mt-0.5">{emp.description[lang]}</p>
-                      </div>
-                      <div className="flex items-center gap-2 bg-brand-accent/5 p-1 rounded-xl border border-brand-accent/10">
-                        <button 
-                          onClick={() => removeFlavor(emp.code)}
-                          className={cn(
-                            "w-8 h-8 rounded-lg flex items-center justify-center transition-all",
-                            customizingMenu.flavors[emp.code] ? "bg-white text-brand-primary shadow-sm active:scale-90" : "text-brand-text/10"
-                          )}
-                          disabled={!customizingMenu.flavors[emp.code]}
-                        >
-                          <Minus size={16} />
-                        </button>
-                        <span className={cn(
-                          "w-4 text-center font-black text-sm tabular-nums",
-                          customizingMenu.flavors[emp.code] ? "text-brand-primary" : "text-brand-text/10"
-                        )}>
-                          {customizingMenu.flavors[emp.code] || 0}
-                        </span>
-                        <button 
-                          onClick={() => addFlavor(emp.code)}
-                          className={cn(
-                            "w-8 h-8 rounded-lg flex items-center justify-center shadow-sm active:scale-90 transition-all",
-                            currentSelectionCount >= customizingMenu.menu.capacity ? "bg-brand-accent/20 text-brand-text/20" : "bg-brand-primary text-white"
-                          )}
-                          disabled={currentSelectionCount >= customizingMenu.menu.capacity}
-                        >
-                          <Plus size={16} />
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="space-y-6">
-                  {DRINKS.map((category, idx) => (
-                    <div key={idx} className="space-y-3">
-                      <h3 className="text-brand-primary font-bold text-[10px] uppercase tracking-widest px-1">
-                        {category.title[lang]}
-                      </h3>
-                      <div className="grid grid-cols-1 gap-2">
-                        {category.items.map((drink) => (
-                          <div key={drink.id} className="glass-card p-3 flex flex-col gap-2 relative">
-                            <div className="flex justify-between items-center">
-                              <div className="flex flex-col">
-                                <span className="text-sm font-bold text-brand-text leading-tight">{drink.name[lang]}</span>
-                                {drink.premium && (
-                                  <span className="text-[9px] font-black text-brand-primary uppercase tracking-tighter mt-0.5">
-                                    + {(drink.numericPrice - 2.5).toFixed(2)} € {UI_TEXT.customization.extra[lang]}
-                                  </span>
-                                )}
-                              </div>
-                              <div className="flex items-center gap-2 bg-brand-accent/5 p-1 rounded-lg border border-brand-accent/5">
-                                <button 
-                                  onClick={() => removeDrinkFromMenu(drink.id)}
-                                  className={cn(
-                                    "w-7 h-7 rounded-md flex items-center justify-center transition-all",
-                                    customizingMenu.drinks[drink.id] ? "bg-white text-brand-primary shadow-sm pointer-events-auto" : "text-brand-text/10 pointer-events-none"
-                                  )}
-                                >
-                                  <Minus size={14} />
-                                </button>
-                                <span className={cn(
-                                  "min-w-[14px] text-center font-bold text-xs tabular-nums",
-                                  customizingMenu.drinks[drink.id] ? "text-brand-primary" : "text-brand-text/10"
-                                )}>
-                                  {customizingMenu.drinks[drink.id] || 0}
-                                </span>
-                                <button 
-                                  onClick={() => addDrinkToMenu(drink.id)}
-                                  className="w-7 h-7 rounded-md bg-brand-primary text-white flex items-center justify-center shadow-sm active:scale-90 transition-all"
-                                >
-                                  <Plus size={14} />
-                                </button>
-                              </div>
-                            </div>
-                            
-                            {drink.premium && customizingMenu.drinks[drink.id] && (
-                              <p className="text-[9px] text-orange-600 font-bold bg-orange-50 p-2 rounded-lg border border-orange-100 italic">
-                                {UI_TEXT.customization.premiumWarning[lang]}
-                              </p>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
 
-              <div className="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-brand-bg via-brand-bg/80 to-transparent z-50 flex gap-2">
-                {customizingMenu.step === 'drinks' && (
-                  <button 
-                    onClick={() => setCustomizingMenu(prev => prev ? { ...prev, step: 'flavors' } : null)}
-                    className="flex-shrink-0 p-4 rounded-2xl bg-white border-2 border-brand-accent/20 text-brand-text shadow-xl active:scale-95 transition-all"
-                  >
-                    <ArrowLeft size={24} />
-                  </button>
+                      <div className="pt-4 border-t-2 border-dashed border-brand-accent/20 flex justify-between items-end">
+                        <span className="text-xs font-black uppercase text-brand-text/40">{UI_TEXT.cart.total[lang]}</span>
+                        <div className="text-right">
+                          <span className="block text-[10px] text-brand-primary font-bold line-through opacity-40">{customizingMenu.menu.price}</span>
+                          <span className="text-3xl font-black text-brand-text">
+                            {customizingMenuPrice.toFixed(2)} €
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <p className="text-[10px] text-brand-text/50 italic text-center px-4">
+                      {UI_TEXT.cart.ticketMessage[lang]}
+                    </p>
+                  </div>
                 )}
-                <button 
-                  onClick={confirmSelection}
-                  disabled={customizingMenu.step === 'flavors' ? currentSelectionCount !== customizingMenu.menu.capacity : currentDrinkCount < customizingMenu.menu.drinkCapacity}
-                  className={cn(
-                    "flex-grow p-4 rounded-2xl font-black text-lg shadow-xl transition-all flex items-center justify-center gap-3 uppercase italic tracking-wider",
-                    (customizingMenu.step === 'flavors' ? currentSelectionCount === customizingMenu.menu.capacity : currentDrinkCount >= customizingMenu.menu.drinkCapacity) 
-                      ? "bg-brand-primary text-white active:scale-95" 
-                      : "bg-brand-accent/20 text-brand-text/20 cursor-not-allowed"
-                  )}
-                >
-                  {customizingMenu.step === 'flavors' ? (
-                    <>
-                      {UI_TEXT.customization.next[lang]}
-                      <ArrowRight size={22} strokeWidth={2.5} />
-                    </>
+              </div>
+
+              {/* Fixed Bottom Navigation Area */}
+              <div className="fixed bottom-4 left-4 right-4 z-[60] flex flex-col gap-2 max-w-xl mx-auto">
+                <div className="flex gap-2 w-full">
+                  {customizingMenu.step !== 'flavors' ? (
+                    <button 
+                      onClick={() => setCustomizingMenu(prev => {
+                        if (!prev) return null;
+                        if (prev.step === 'drinks') return { ...prev, step: 'flavors' };
+                        if (prev.step === 'summary') return { ...prev, step: prev.menu.drinkCapacity > 0 ? 'drinks' : 'flavors' };
+                        return prev;
+                      })}
+                      className="flex-shrink-0 w-16 h-16 rounded-2xl bg-white border-2 border-brand-accent/30 text-brand-text shadow-xl flex items-center justify-center active:scale-95 transition-all"
+                    >
+                      <ArrowLeft size={24} strokeWidth={2.5} />
+                    </button>
                   ) : (
-                    <>
-                      <ShoppingBag size={22} strokeWidth={2.5} />
-                      {customizingMenu.isEditing ? UI_TEXT.customization.saveChanges[lang] : UI_TEXT.customization.addToOrder[lang]}
-                    </>
+                    <button 
+                      onClick={() => setCustomizingMenu(null)}
+                      className="flex-shrink-0 w-16 h-16 rounded-2xl bg-white border-2 border-brand-accent/30 text-brand-text shadow-xl flex items-center justify-center active:scale-95 transition-all"
+                    >
+                      <X size={24} strokeWidth={2.5} />
+                    </button>
                   )}
-                </button>
+                  
+                  <button 
+                    onClick={confirmSelection}
+                    disabled={
+                      customizingMenu.step === 'flavors' ? currentSelectionCount !== customizingMenu.menu.capacity :
+                      customizingMenu.step === 'drinks' ? currentDrinkCount < customizingMenu.menu.drinkCapacity :
+                      false
+                    }
+                    className={cn(
+                      "flex-grow h-16 rounded-2xl font-black text-lg shadow-xl transition-all flex items-center justify-center gap-3 uppercase italic tracking-wider px-6",
+                      (customizingMenu.step === 'flavors' ? currentSelectionCount === customizingMenu.menu.capacity :
+                       customizingMenu.step === 'drinks' ? currentDrinkCount >= customizingMenu.menu.drinkCapacity :
+                       true) 
+                        ? "bg-brand-primary text-white active:scale-95" 
+                        : "bg-brand-accent/10 text-brand-text/20 cursor-not-allowed"
+                    )}
+                  >
+                    {customizingMenu.step === 'flavors' ? (
+                      <>
+                        {UI_TEXT.customization.continueToDrinks[lang]}
+                        <ArrowRight size={22} strokeWidth={3} />
+                      </>
+                    ) : customizingMenu.step === 'drinks' ? (
+                      <>
+                        {UI_TEXT.customization.continueToSummary[lang]}
+                        <ArrowRight size={22} strokeWidth={3} />
+                      </>
+                    ) : (
+                      <>
+                        <ShoppingBag size={22} strokeWidth={3} />
+                        {customizingMenu.isEditing ? UI_TEXT.customization.saveChanges[lang] : UI_TEXT.customization.addToOrder[lang]}
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
             </motion.div>
           )}
@@ -1228,7 +1412,7 @@ export default function App() {
       </main>
 
       {/* Integrated Bottom Navigation Bar */}
-      {view !== 'language' && view !== 'ticket' && (
+      {view !== 'language' && view !== 'ticket' && view !== 'customize-menu' && (
         <AnimatePresence>
           <motion.div 
             initial={{ y: 100 }}

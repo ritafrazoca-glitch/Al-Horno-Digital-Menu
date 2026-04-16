@@ -312,6 +312,9 @@ export const UI_TEXT = {
     premiumWarning: { pt: 'Esta bebida não está incluída no menu — será adicionada a diferença de preço', en: 'This drink is not included in the menu — price difference will be added', es: 'Esta bebida no está incluida en el menú — se añadirá la diferencia de precio' },
     extra: { pt: 'Extra', en: 'Extra', es: 'Extra' },
     next: { pt: 'Próximo: Bebidas', en: 'Next: Drinks', es: 'Siguiente: Bebidas' },
+    summary: { pt: 'Resumo do Menu', en: 'Menu Summary', es: 'Resumen del Menú' },
+    continueToDrinks: { pt: 'Continuar para bebidas', en: 'Continue to drinks', es: 'Continuar a bebidas' },
+    continueToSummary: { pt: 'Continuar para resumo', en: 'Continue to summary', es: 'Continuar al resumen' },
     back: { pt: 'Voltar', en: 'Back', es: 'Volver' }
   },
   suggestions: {
