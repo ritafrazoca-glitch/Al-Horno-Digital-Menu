@@ -52,7 +52,7 @@ export const EMPANADAS: Empanada[] = [
       es: 'Carne de res, cebolla, pimientos y chiles variados'
     },
     spicy: true,
-    price: 3.8
+    price: 3.5
   },
   {
     code: 'P',
@@ -74,7 +74,7 @@ export const EMPANADAS: Empanada[] = [
     },
     popular: true,
     spicy: true,
-    price: 3.8
+    price: 3.5
   },
   {
     code: 'CL',
@@ -84,7 +84,7 @@ export const EMPANADAS: Empanada[] = [
       en: 'Slow-cooked pork with dark beer, onions, cream, pepper, mustard, and honey',
       es: 'Cerdo a baja temperatura con cerveza negra, cebolla, nata, pimienta, mostaza y miel'
     },
-    price: 3.8
+    price: 3.5
   },
   {
     code: 'A',
@@ -104,7 +104,7 @@ export const EMPANADAS: Empanada[] = [
       en: 'Criollo chorizo, sliced onions, provolone cheese, sun-dried tomatoes, and white wine',
       es: 'Chorizo criollo, cebolla laminada, queso provolone, tomate seco y vino blanco'
     },
-    price: 3.8
+    price: 3.5
   },
   {
     code: 'JQ',
@@ -150,7 +150,7 @@ export const EMPANADAS: Empanada[] = [
     },
     popular: true,
     vegetarian: true,
-    price: 3.8
+    price: 3.5
   },
   {
     code: 'TA',
@@ -180,12 +180,12 @@ export const DRINKS: DrinkCategory[] = [
   {
     title: { pt: 'Sumos', en: 'Soft Drinks', es: 'Refrescos' },
     items: [
-      { id: 'd1', name: { pt: 'Sumol', en: 'Sumol', es: 'Sumol' }, price: '2,6 €', numericPrice: 2.6 },
-      { id: 'd2', name: { pt: 'Iced Tea', en: 'Iced Tea', es: 'Iced Tea' }, price: '2,6 €', numericPrice: 2.6 },
-      { id: 'd3', name: { pt: 'Compal', en: 'Compal', es: 'Compal' }, price: '2,6 €', numericPrice: 2.6 },
-      { id: 'd4', name: { pt: '7Up', en: '7Up', es: '7Up' }, price: '2,6 €', numericPrice: 2.6 },
-      { id: 'd5', name: { pt: 'Pepsi', en: 'Pepsi', es: 'Pepsi' }, price: '2,6 €', numericPrice: 2.6 },
-      { id: 'd6', name: { pt: 'Pepsi 0', en: 'Pepsi 0', es: 'Pepsi 0' }, price: '2,6 €', numericPrice: 2.6 }
+      { id: 'd1', name: { pt: 'Sumol', en: 'Sumol', es: 'Sumol' }, price: '2,5 €', numericPrice: 2.5 },
+      { id: 'd2', name: { pt: 'Iced Tea', en: 'Iced Tea', es: 'Iced Tea' }, price: '2,5 €', numericPrice: 2.5 },
+      { id: 'd3', name: { pt: 'Compal', en: 'Compal', es: 'Compal' }, price: '2,5 €', numericPrice: 2.5 },
+      { id: 'd4', name: { pt: '7Up', en: '7Up', es: '7Up' }, price: '2,5 €', numericPrice: 2.5 },
+      { id: 'd5', name: { pt: 'Pepsi', en: 'Pepsi', es: 'Pepsi' }, price: '2,5 €', numericPrice: 2.5 },
+      { id: 'd6', name: { pt: 'Pepsi 0', en: 'Pepsi 0', es: 'Pepsi 0' }, price: '2,5 €', numericPrice: 2.5 }
     ]
   },
   {
