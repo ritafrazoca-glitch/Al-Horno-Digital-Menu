@@ -7,11 +7,14 @@ export interface Empanada {
   popular?: boolean;
   spicy?: boolean;
   vegetarian?: boolean;
+  price: number;
 }
 
 export interface Drink {
+  id: string;
   name: { [key in Language]: string };
   price: string;
+  numericPrice: number;
 }
 
 export interface DrinkCategory {
@@ -20,9 +23,12 @@ export interface DrinkCategory {
 }
 
 export interface MenuOption {
+  id: string;
   title: { [key in Language]: string };
   price: string;
+  numericPrice: number;
   details?: { [key in Language]: string };
+  capacity: number;
 }
 
 export const EMPANADAS: Empanada[] = [
@@ -34,7 +40,8 @@ export const EMPANADAS: Empanada[] = [
       en: 'Beef, onion, bell pepper, hard-boiled egg, and green olives',
       es: 'Carne de res, cebolla, pimiento, huevo cocido y aceituna verde'
     },
-    popular: true
+    popular: true,
+    price: 3.5
   },
   {
     code: 'TX',
@@ -44,7 +51,8 @@ export const EMPANADAS: Empanada[] = [
       en: 'Beef, onions, bell peppers, and assorted chili peppers',
       es: 'Carne de res, cebolla, pimientos y chiles variados'
     },
-    spicy: true
+    spicy: true,
+    price: 3.8
   },
   {
     code: 'P',
@@ -53,7 +61,8 @@ export const EMPANADAS: Empanada[] = [
       pt: 'Carne de frango, tomate, cebola e cebola japonesa',
       en: 'Chicken, tomatoes, onions, and japanese onions',
       es: 'Pollo, tomate, cebolla y cebolla japonesa'
-    }
+    },
+    price: 3.5
   },
   {
     code: 'PX',
@@ -64,7 +73,8 @@ export const EMPANADAS: Empanada[] = [
       es: 'Pollo, cebolla, apio, lima kaffir y mezcla de pimientas'
     },
     popular: true,
-    spicy: true
+    spicy: true,
+    price: 3.8
   },
   {
     code: 'CL',
@@ -73,7 +83,8 @@ export const EMPANADAS: Empanada[] = [
       pt: 'Cachaço de porco a baixa temperatura com cerveja preta, cebola, natas, pimenta, mostarda e mel',
       en: 'Slow-cooked pork with dark beer, onions, cream, pepper, mustard, and honey',
       es: 'Cerdo a baja temperatura con cerveza negra, cebolla, nata, pimienta, mostaza y miel'
-    }
+    },
+    price: 3.8
   },
   {
     code: 'A',
@@ -82,7 +93,8 @@ export const EMPANADAS: Empanada[] = [
       pt: 'Atum, cebola, pimentos, ovo cozido, azeitonas verdes, tomate fresco e curgete',
       en: 'Tuna, onion, bell peppers, hard-boiled egg, green olives, fresh tomatoes, and zucchini',
       es: 'Atún, cebolla, pimientos, huevo cozido, aceitunas verdes, tomate fresco y calabacín'
-    }
+    },
+    price: 3.5
   },
   {
     code: 'CP',
@@ -91,7 +103,8 @@ export const EMPANADAS: Empanada[] = [
       pt: 'Chouriço criollo, cebola laminada, queijo provolone, tomate seco e vinho branco',
       en: 'Criollo chorizo, sliced onions, provolone cheese, sun-dried tomatoes, and white wine',
       es: 'Chorizo criollo, cebolla laminada, queso provolone, tomate seco y vino blanco'
-    }
+    },
+    price: 3.8
   },
   {
     code: 'JQ',
@@ -100,7 +113,8 @@ export const EMPANADAS: Empanada[] = [
       pt: 'Fiambre e mistura de queijos',
       en: 'Ham and assorted cheeses',
       es: 'Jamón y mezcla de quesos'
-    }
+    },
+    price: 3.5
   },
   {
     code: 'Q',
@@ -112,7 +126,8 @@ export const EMPANADAS: Empanada[] = [
     },
     popular: true,
     spicy: true,
-    vegetarian: true
+    vegetarian: true,
+    price: 3.5
   },
   {
     code: 'CQ',
@@ -122,7 +137,8 @@ export const EMPANADAS: Empanada[] = [
       en: 'Grilled onions and assorted cheeses',
       es: 'Cebolla a la plancha y quesos variados'
     },
-    vegetarian: true
+    vegetarian: true,
+    price: 3.5
   },
   {
     code: 'ST',
@@ -133,7 +149,8 @@ export const EMPANADAS: Empanada[] = [
       es: 'Setas, tartufata (pasta de trufa), cebolla, tomillo fresco y quesos variados'
     },
     popular: true,
-    vegetarian: true
+    vegetarian: true,
+    price: 3.8
   },
   {
     code: 'TA',
@@ -143,7 +160,8 @@ export const EMPANADAS: Empanada[] = [
       en: 'Fresh tomatoes, sun-dried tomatoes, fresh basil, and assorted cheeses',
       es: 'Tomate fresco, tomate seco, albahaca fresca y quesos variados'
     },
-    vegetarian: true
+    vegetarian: true,
+    price: 3.5
   },
   {
     code: 'ER',
@@ -153,7 +171,8 @@ export const EMPANADAS: Empanada[] = [
       en: 'Spinach, ricotta, onion, walnuts, and assorted cheeses',
       es: 'Espinacas, ricotta, cebolla, nueces y quesos variados'
     },
-    vegetarian: true
+    vegetarian: true,
+    price: 3.5
   }
 ];
 
@@ -161,74 +180,89 @@ export const DRINKS: DrinkCategory[] = [
   {
     title: { pt: 'Sumos', en: 'Soft Drinks', es: 'Refrescos' },
     items: [
-      { name: { pt: 'Sumol', en: 'Sumol', es: 'Sumol' }, price: '2,6 €' },
-      { name: { pt: 'Iced Tea', en: 'Iced Tea', es: 'Iced Tea' }, price: '2,6 €' },
-      { name: { pt: 'Compal', en: 'Compal', es: 'Compal' }, price: '2,6 €' },
-      { name: { pt: '7Up', en: '7Up', es: '7Up' }, price: '2,6 €' },
-      { name: { pt: 'Pepsi', en: 'Pepsi', es: 'Pepsi' }, price: '2,6 €' },
-      { name: { pt: 'Pepsi 0', en: 'Pepsi 0', es: 'Pepsi 0' }, price: '2,6 €' }
+      { id: 'd1', name: { pt: 'Sumol', en: 'Sumol', es: 'Sumol' }, price: '2,6 €', numericPrice: 2.6 },
+      { id: 'd2', name: { pt: 'Iced Tea', en: 'Iced Tea', es: 'Iced Tea' }, price: '2,6 €', numericPrice: 2.6 },
+      { id: 'd3', name: { pt: 'Compal', en: 'Compal', es: 'Compal' }, price: '2,6 €', numericPrice: 2.6 },
+      { id: 'd4', name: { pt: '7Up', en: '7Up', es: '7Up' }, price: '2,6 €', numericPrice: 2.6 },
+      { id: 'd5', name: { pt: 'Pepsi', en: 'Pepsi', es: 'Pepsi' }, price: '2,6 €', numericPrice: 2.6 },
+      { id: 'd6', name: { pt: 'Pepsi 0', en: 'Pepsi 0', es: 'Pepsi 0' }, price: '2,6 €', numericPrice: 2.6 }
     ]
   },
   {
     title: { pt: 'Águas', en: 'Water', es: 'Aguas' },
     items: [
-      { name: { pt: 'Serra da Estrela 0.5', en: 'Serra da Estrela 0.5', es: 'Serra da Estrela 0.5' }, price: '2 €' },
-      { name: { pt: 'Frize', en: 'Frize', es: 'Frize' }, price: '2,3 €' }
+      { id: 'd7', name: { pt: 'Serra da Estrela 0.5', en: 'Serra da Estrela 0.5', es: 'Serra da Estrela 0.5' }, price: '2 €', numericPrice: 2 },
+      { id: 'd8', name: { pt: 'Frize', en: 'Frize', es: 'Frize' }, price: '2,3 €', numericPrice: 2.3 }
     ]
   },
   {
     title: { pt: 'Cervejas', en: 'Beers', es: 'Cervezas' },
     items: [
-      { name: { pt: 'Corona', en: 'Corona', es: 'Corona' }, price: '3,5 €' },
-      { name: { pt: 'Estrella Damm 0.25', en: 'Estrella Damm 0.25', es: 'Estrella Damm 0.25' }, price: '2 €' },
-      { name: { pt: 'Estrella Damm 0.33', en: 'Estrella Damm 0.33', es: 'Estrella Damm 0.33' }, price: '3 €' },
-      { name: { pt: 'Damm Free 0.25', en: 'Damm Free 0.25', es: 'Damm Free 0.25' }, price: '2,1 €' }
+      { id: 'd9', name: { pt: 'Corona', en: 'Corona', es: 'Corona' }, price: '3,5 €', numericPrice: 3.5 },
+      { id: 'd10', name: { pt: 'Estrella Damm 0.25', en: 'Estrella Damm 0.25', es: 'Estrella Damm 0.25' }, price: '2 €', numericPrice: 2 },
+      { id: 'd11', name: { pt: 'Estrella Damm 0.33', en: 'Estrella Damm 0.33', es: 'Estrella Damm 0.33' }, price: '3 €', numericPrice: 3 },
+      { id: 'd12', name: { pt: 'Damm Free 0.25', en: 'Damm Free 0.25', es: 'Damm Free 0.25' }, price: '2,1 €', numericPrice: 2.1 }
     ]
   },
   {
     title: { pt: 'Cafetaria', en: 'Café', es: 'Cafetería' },
     items: [
-      { name: { pt: 'Café Expresso', en: 'Espresso', es: 'Café Expreso' }, price: '1 €' },
-      { name: { pt: 'Abatanado', en: 'Black Coffee', es: 'Café Largo' }, price: '1,5 €' },
-      { name: { pt: 'Meia de Leite', en: 'Latte', es: 'Café con Leche' }, price: '1,6 €' }
+      { id: 'd13', name: { pt: 'Café Expresso', en: 'Espresso', es: 'Café Expreso' }, price: '1 €', numericPrice: 1 },
+      { id: 'd14', name: { pt: 'Abatanado', en: 'Black Coffee', es: 'Café Largo' }, price: '1,5 €', numericPrice: 1.5 },
+      { id: 'd15', name: { pt: 'Meia de Leite', en: 'Latte', es: 'Café con Leche' }, price: '1,6 €', numericPrice: 1.6 }
     ]
   },
   {
     title: { pt: 'Vinho a Copo', en: 'Glass of Wine', es: 'Copa de Vino' },
     items: [
-      { name: { pt: 'Vinho a Copo', en: 'Glass of Wine', es: 'Copa de Vino' }, price: '4 €' }
+      { id: 'd16', name: { pt: 'Vinho a Copo', en: 'Glass of Wine', es: 'Copa de Vino' }, price: '4 €', numericPrice: 4 }
     ]
   }
 ];
 
 export const MENUS: MenuOption[] = [
   {
+    id: 'm3',
     title: { pt: 'Menu 3 Empanadas', en: 'Menu 3 Empanadas', es: 'Menú 3 Empanadas' },
     price: '12,7 €',
-    details: { pt: '3 Empanadas + 1 Bebida', en: '3 Empanadas + 1 Drink', es: '3 Empanadas + 1 Bebida' }
+    numericPrice: 12.7,
+    details: { pt: '3 Empanadas + 1 Bebida', en: '3 Empanadas + 1 Drink', es: '3 Empanadas + 1 Bebida' },
+    capacity: 3
   },
   {
+    id: 'm6',
     title: { pt: 'Menu 6 Empanadas', en: 'Menu 6 Empanadas', es: 'Menú 6 Empanadas' },
     price: '25,4 €',
-    details: { pt: '6 Empanadas + 2 Bebidas', en: '6 Empanadas + 2 Drinks', es: '6 Empanadas + 2 Bebidas' }
+    numericPrice: 25.4,
+    details: { pt: '6 Empanadas + 2 Bebidas', en: '6 Empanadas + 2 Drinks', es: '6 Empanadas + 2 Bebidas' },
+    capacity: 6
   },
   {
+    id: 'm12',
     title: { pt: 'Menu 12 Empanadas', en: 'Menu 12 Empanadas', es: 'Menú 12 Empanadas' },
     price: '46,4 €',
-    details: { pt: '12 Empanadas + 2 Bebidas', en: '12 Empanadas + 2 Drinks', es: '12 Empanadas + 2 Bebidas' }
+    numericPrice: 46.4,
+    details: { pt: '12 Empanadas + 2 Bebidas', en: '12 Empanadas + 2 Drinks', es: '12 Empanadas + 2 Bebidas' },
+    capacity: 12
   }
 ];
 
 export const TASTING_MENUS: MenuOption[] = [
   {
+    id: 't6',
     title: { pt: 'Degustação 6', en: 'Tasting 6', es: 'Degustación 6' },
     price: '21 €',
-    details: { pt: '6 Empanadas', en: '6 Empanadas', es: '6 Empanadas' }
+    numericPrice: 21,
+    details: { pt: '6 Empanadas', en: '6 Empanadas', es: '6 Empanadas' },
+    capacity: 6
   },
   {
+    id: 't12',
     title: { pt: 'Degustação 12', en: 'Tasting 12', es: 'Degustación 12' },
     price: '41 €',
-    details: { pt: '12 Empanadas', en: '12 Empanadas', es: '12 Empanadas' }
+    numericPrice: 41,
+    details: { pt: '12 Empanadas', en: '12 Empanadas', es: '12 Empanadas' },
+    capacity: 12
   }
 ];
 
@@ -239,7 +273,33 @@ export const UI_TEXT = {
     empanadas: { pt: 'Empanadas', en: 'Empanadas', es: 'Empanadas' },
     drinks: { pt: 'Bebidas', en: 'Drinks', es: 'Bebidas' },
     menus: { pt: 'Menus', en: 'Menus', es: 'Menús' },
-    history: { pt: 'A nossa história', en: 'Our history', es: 'Nuestra historia' }
+    history: { pt: 'A nossa história', en: 'Our history', es: 'Nuestra historia' },
+    order: { pt: 'Prepara o teu pedido', en: 'Prepare your order', es: 'Prepara tu pedido' }
+  },
+  cart: {
+    title: { pt: 'O teu pedido', en: 'Your order', es: 'Tu pedido' },
+    add: { pt: 'Adicionar', en: 'Add', es: 'Añadir' },
+    empty: { pt: 'O teu carrinho está vazio', en: 'Your cart is empty', es: 'Tu carrito está vacío' },
+    total: { pt: 'Total', en: 'Total', es: 'Total' },
+    items: { pt: 'itens', en: 'items', es: 'ítems' },
+    showAtCounter: { pt: 'Mostrar pedido no balcão', en: 'Show order at counter', es: 'Mostrar pedido en el mostrador' },
+    ticketMessage: { pt: 'Mostre este pedido no balcão para pagamento', en: 'Show this order at the counter for payment', es: 'Muestre este pedido en el mostrador para el pago' },
+    clear: { pt: 'Limpar', en: 'Clear', es: 'Limpiar' },
+    editSelection: { pt: 'Editar sabores', en: 'Edit flavors', es: 'Editar sabores' }
+  },
+  customization: {
+    choose: { pt: 'Escolhe {count} empanadas', en: 'Choose {count} empanadas', es: 'Elige {count} empanadas' },
+    remaining: { pt: 'Faltam {count}', en: '{count} remaining', es: 'Faltan {count}' },
+    completed: { pt: 'Seleção completa!', en: 'Selection complete!', es: '¡Selección completa!' },
+    addToOrder: { pt: 'Adicionar menu ao pedido', en: 'Add menu to order', es: 'Añadir menú al pedido' },
+    saveChanges: { pt: 'Guardar alterações', en: 'Save changes', es: 'Guardar cambios' },
+    popularCombo: { pt: 'Combinação popular', en: 'Popular combo', es: 'Combinación popular' },
+    autoFill: { pt: 'Preencher automaticamente', en: 'Fill automatically', es: 'Rellenar automáticamente' },
+    houseChoice: { pt: 'Escolha da casa', en: 'House choice', es: 'Elección de la casa' }
+  },
+  suggestions: {
+    menu: { pt: 'Queres transformar isto num menu? Fica mais económico 🔥', en: 'Want to turn this into a menu? It\'s more economical 🔥', es: '¿Quieres convertir esto en un menú? Es más económico 🔥' },
+    drink: { pt: 'Adiciona uma bebida para acompanhar 🍺', en: 'Add a drink to go with it 🍺', es: 'Añade una bebida para acompañar 🍺' }
   },
   backToLanguage: { pt: 'Voltar ao idioma', en: 'Back to language', es: 'Volver al idioma' },
   mostPopular: { pt: 'Mais Pedida', en: 'Most Popular', es: 'Más Pedida' },
