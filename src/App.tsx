@@ -209,9 +209,7 @@ export default function App() {
 
   const addDrinkToMenu = (drinkId: string) => {
     if (!customizingMenu) return;
-    const currentCount = Object.values(customizingMenu.drinks).reduce((a, b) => (a as number) + (b as number), 0);
-    if (currentCount >= customizingMenu.menu.drinkCapacity) return;
-
+    
     setCustomizingMenu(prev => {
       if (!prev) return null;
       return {
@@ -272,15 +270,34 @@ export default function App() {
     }
 
     const currentDrinkCount = Object.values(drinks).reduce((a, b) => (a as number) + (b as number), 0);
-    if (currentDrinkCount !== menu.drinkCapacity) return;
+    if (currentDrinkCount < menu.drinkCapacity) return;
 
-    // Calculate extra cost for premium drinks
+    // Calculate price: Base Menu + [Premium Upcharges for Included] + [Full Price for Extras]
+    // To give the best deal, we assign "included" slots to the most expensive drinks first
     let extraCost = 0;
+    const allSelectedDrinks: Drink[] = [];
     Object.entries(drinks).forEach(([drinkId, count]) => {
       const drink = DRINKS.flatMap(c => c.items).find(d => d.id === drinkId);
-      if (drink?.premium) {
-        // Difference between premium price and standard menu drink price (2.5€)
-        extraCost += (drink.numericPrice - 2.5) * (count as number);
+      if (drink) {
+        for (let i = 0; i < (count as number); i++) {
+          allSelectedDrinks.push(drink);
+        }
+      }
+    });
+
+    // Sort by price descending to use slots for most expensive items
+    allSelectedDrinks.sort((a, b) => b.numericPrice - a.numericPrice);
+
+    allSelectedDrinks.forEach((drink, index) => {
+      if (index < menu.drinkCapacity) {
+        // Included Drink Slot
+        if (drink.premium) {
+          // Add difference from base drink price (2.5€)
+          extraCost += (drink.numericPrice - 2.5);
+        }
+      } else {
+        // Extra Drink (Beyond Capacity) - Full Price
+        extraCost += drink.numericPrice;
       }
     });
 
@@ -710,7 +727,7 @@ export default function App() {
                     </h2>
                     <p className={cn(
                       "text-sm font-bold flex items-center gap-2",
-                      (customizingMenu.step === 'flavors' ? currentSelectionCount === customizingMenu.menu.capacity : currentDrinkCount === customizingMenu.menu.drinkCapacity) 
+                      (customizingMenu.step === 'flavors' ? currentSelectionCount === customizingMenu.menu.capacity : currentDrinkCount >= customizingMenu.menu.drinkCapacity) 
                         ? "text-green-600" 
                         : "text-brand-primary"
                     )}>
@@ -721,8 +738,8 @@ export default function App() {
                           UI_TEXT.customization.remaining[lang].replace('{count}', (customizingMenu.menu.capacity - currentSelectionCount).toString())
                         )
                       ) : (
-                        currentDrinkCount === customizingMenu.menu.drinkCapacity ? (
-                          <><Sparkles size={14} /> {UI_TEXT.customization.completed[lang]}</>
+                        currentDrinkCount >= customizingMenu.menu.drinkCapacity ? (
+                          <><Sparkles size={14} /> {currentDrinkCount > customizingMenu.menu.drinkCapacity ? UI_TEXT.customization.drinksExtra[lang] : UI_TEXT.customization.completed[lang]}</>
                         ) : (
                           UI_TEXT.customization.drinksRemaining[lang]
                             .replace('{current}', currentDrinkCount.toString())
@@ -740,7 +757,7 @@ export default function App() {
                         strokeWidth="4"
                         className="text-brand-primary"
                         strokeDasharray={150.8}
-                        strokeDashoffset={150.8 - (150.8 * (customizingMenu.step === 'flavors' ? currentSelectionCount : currentDrinkCount)) / (customizingMenu.step === 'flavors' ? customizingMenu.menu.capacity : customizingMenu.menu.drinkCapacity)}
+                        strokeDashoffset={150.8 - (150.8 * Math.min(1, (customizingMenu.step === 'flavors' ? currentSelectionCount : currentDrinkCount) / (customizingMenu.step === 'flavors' ? customizingMenu.menu.capacity : customizingMenu.menu.drinkCapacity)))}
                         strokeLinecap="round"
                         style={{ transition: 'stroke-dashoffset 0.4s cubic-bezier(0.4, 0, 0.2, 1)' }}
                       />
@@ -863,11 +880,7 @@ export default function App() {
                                 </span>
                                 <button 
                                   onClick={() => addDrinkToMenu(drink.id)}
-                                  className={cn(
-                                    "w-7 h-7 rounded-md bg-brand-primary text-white flex items-center justify-center shadow-sm active:scale-90 transition-all",
-                                    currentDrinkCount >= customizingMenu.menu.drinkCapacity ? "bg-brand-accent/20 text-brand-text/20" : ""
-                                  )}
-                                  disabled={currentDrinkCount >= customizingMenu.menu.drinkCapacity}
+                                  className="w-7 h-7 rounded-md bg-brand-primary text-white flex items-center justify-center shadow-sm active:scale-90 transition-all"
                                 >
                                   <Plus size={14} />
                                 </button>
@@ -898,10 +911,10 @@ export default function App() {
                 )}
                 <button 
                   onClick={confirmSelection}
-                  disabled={customizingMenu.step === 'flavors' ? currentSelectionCount !== customizingMenu.menu.capacity : currentDrinkCount !== customizingMenu.menu.drinkCapacity}
+                  disabled={customizingMenu.step === 'flavors' ? currentSelectionCount !== customizingMenu.menu.capacity : currentDrinkCount < customizingMenu.menu.drinkCapacity}
                   className={cn(
                     "flex-grow p-4 rounded-2xl font-black text-lg shadow-xl transition-all flex items-center justify-center gap-3 uppercase italic tracking-wider",
-                    (customizingMenu.step === 'flavors' ? currentSelectionCount === customizingMenu.menu.capacity : currentDrinkCount === customizingMenu.menu.drinkCapacity) 
+                    (customizingMenu.step === 'flavors' ? currentSelectionCount === customizingMenu.menu.capacity : currentDrinkCount >= customizingMenu.menu.drinkCapacity) 
                       ? "bg-brand-primary text-white active:scale-95" 
                       : "bg-brand-accent/20 text-brand-text/20 cursor-not-allowed"
                   )}
