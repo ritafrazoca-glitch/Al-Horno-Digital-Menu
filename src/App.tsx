@@ -24,7 +24,8 @@ import {
   Ticket,
   ChevronRight,
   Sparkles,
-  ShoppingBag
+  ShoppingBag,
+  Tag
 } from 'lucide-react';
 import { 
   Language, 
@@ -814,7 +815,7 @@ export default function App() {
                   </div>
                   <p className="text-brand-text/50 font-medium">{UI_TEXT.cart.empty[lang]}</p>
                   <button 
-                    onClick={() => navigateTo('home')}
+                    onClick={() => navigateTo('empanadas')}
                     className="text-brand-primary font-bold underline"
                   >
                     {UI_TEXT.cart.add[lang]} {UI_TEXT.cart.items[lang]}
@@ -1014,54 +1015,42 @@ export default function App() {
         </AnimatePresence>
       </main>
 
-      {/* Floating Order Button & Suggestions */}
-      {view !== 'language' && view !== 'order' && view !== 'ticket' && (
+      {/* Integrated Bottom Navigation Bar */}
+      {view !== 'language' && view !== 'ticket' && (
         <AnimatePresence>
           <motion.div 
             initial={{ y: 100 }}
             animate={{ y: 0 }}
             exit={{ y: 100 }}
-            className="fixed bottom-0 left-0 right-0 z-50 p-4"
+            className="fixed bottom-0 left-0 right-0 z-50 p-4 pt-0"
           >
-            {/* Quick Summary / Upsell mini bar */}
-            {totalItems > 0 && (
-              <motion.div 
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                onClick={() => navigateTo('order')}
-                className="max-w-xl mx-auto mb-3 bg-brand-primary rounded-2xl shadow-lg p-1.5 flex items-center justify-between text-white cursor-pointer active:scale-95 transition-all"
-              >
-                <div className="flex items-center gap-3 ml-2">
-                  <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center font-black relative">
-                    <ShoppingCart size={18} />
-                    <span className="absolute -top-1 -right-1 w-5 h-5 bg-orange-500 rounded-full flex items-center justify-center text-[10px] border-2 border-brand-primary">
-                      {totalItems}
-                    </span>
-                  </div>
-                  <div>
-                    <p className="text-[10px] font-bold uppercase tracking-tighter text-white/60 leading-none mb-0.5">
-                      {UI_TEXT.cart.title[lang]}
-                    </p>
-                    <p className="text-lg font-black leading-none">{cartTotal.toFixed(2)} €</p>
-                  </div>
-                </div>
-                
-                <div className="flex items-center gap-2 bg-white/20 py-2.5 px-4 rounded-xl font-bold text-sm">
-                  <span>{UI_TEXT.sections.order[lang]}</span>
-                  <ChevronRight size={16} />
-                </div>
-              </motion.div>
-            )}
-
-            {/* Normal Navigation bar */}
-            {totalItems === 0 && (
-              <nav className="max-w-xl mx-auto bg-white/90 backdrop-blur-lg border border-brand-accent/20 rounded-2xl px-6 py-3 flex justify-around items-center shadow-lg">
-                <NavIcon icon={<Flame size={20} strokeWidth={1.5} />} active={view === 'empanadas'} onClick={() => navigateTo('empanadas')} />
-                <NavIcon icon={<Beer size={20} strokeWidth={1.5} />} active={view === 'drinks'} onClick={() => navigateTo('drinks')} />
-                <NavIcon icon={<Utensils size={20} strokeWidth={1.5} />} active={view === 'menus'} onClick={() => navigateTo('menus')} />
-                <NavIcon icon={<History size={20} strokeWidth={1.5} />} active={view === 'history'} onClick={() => navigateTo('history')} />
-              </nav>
-            )}
+            <nav className="max-w-xl mx-auto bg-white/95 backdrop-blur-xl border border-brand-accent/20 rounded-3xl px-2 py-2 flex justify-around items-end shadow-2xl">
+              <NavIcon 
+                icon={<Flame size={20} strokeWidth={2} />} 
+                active={view === 'empanadas'} 
+                label={UI_TEXT.sections.empanadas[lang!]}
+                onClick={() => navigateTo('empanadas')} 
+              />
+              <NavIcon 
+                icon={<Beer size={20} strokeWidth={2} />} 
+                active={view === 'drinks'} 
+                label={UI_TEXT.sections.drinks[lang!]}
+                onClick={() => navigateTo('drinks')} 
+              />
+              <NavIcon 
+                icon={<Tag size={20} strokeWidth={2} />} 
+                active={view === 'menus'} 
+                label={UI_TEXT.sections.menus[lang!]}
+                onClick={() => navigateTo('menus')} 
+              />
+              <NavIcon 
+                icon={<ShoppingBag size={20} strokeWidth={2} />} 
+                active={view === 'order'} 
+                label={UI_TEXT.sections.cart[lang!]}
+                badge={totalItems}
+                onClick={() => navigateTo('order')} 
+              />
+            </nav>
           </motion.div>
         </AnimatePresence>
       )}
@@ -1134,16 +1123,39 @@ function SectionHeader({ title }: { title: string }) {
   );
 }
 
-function NavIcon({ icon, active, onClick }: { icon: React.ReactNode, active: boolean, onClick: () => void }) {
+function NavIcon({ icon, active, onClick, label, badge }: { icon: React.ReactNode, active: boolean, onClick: () => void, label?: string, badge?: number }) {
   return (
     <button 
       onClick={onClick}
       className={cn(
-        "p-3 rounded-xl transition-all",
-        active ? "bg-brand-primary text-white shadow-md scale-110" : "text-brand-text/40 hover:text-brand-primary hover:bg-brand-primary/5"
+        "flex flex-col items-center gap-1 min-w-[64px] transition-all relative py-1",
+        active ? "text-brand-primary" : "text-brand-text/40"
       )}
     >
-      {icon}
+      <div className={cn(
+        "p-2 rounded-xl flex items-center justify-center transition-all relative",
+        active ? "bg-brand-primary text-white shadow-md -translate-y-1" : "hover:bg-brand-primary/5"
+      )}>
+        {icon}
+        {badge !== undefined && badge > 0 && (
+          <motion.span 
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            key={badge}
+            className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-orange-500 text-white rounded-full flex items-center justify-center text-[10px] font-black border-2 border-white"
+          >
+            {badge}
+          </motion.span>
+        )}
+      </div>
+      {label && (
+        <span className={cn(
+          "text-[10px] font-bold uppercase tracking-tighter transition-all",
+          active ? "opacity-100" : "opacity-60"
+        )}>
+          {label}
+        </span>
+      )}
     </button>
   );
 }

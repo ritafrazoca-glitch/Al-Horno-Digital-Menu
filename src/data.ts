@@ -274,7 +274,8 @@ export const UI_TEXT = {
     drinks: { pt: 'Bebidas', en: 'Drinks', es: 'Bebidas' },
     menus: { pt: 'Menus', en: 'Menus', es: 'Menús' },
     history: { pt: 'A nossa história', en: 'Our history', es: 'Nuestra historia' },
-    order: { pt: 'Prepara o teu pedido', en: 'Prepare your order', es: 'Prepara tu pedido' }
+    order: { pt: 'Prepara o teu pedido', en: 'Prepare your order', es: 'Prepara tu pedido' },
+    cart: { pt: 'Pedido', en: 'Order', es: 'Pedido' }
   },
   cart: {
     title: { pt: 'O teu pedido', en: 'Your order', es: 'Tu pedido' },
