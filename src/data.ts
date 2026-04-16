@@ -15,6 +15,7 @@ export interface Drink {
   name: { [key in Language]: string };
   price: string;
   numericPrice: number;
+  premium?: boolean;
 }
 
 export interface DrinkCategory {
@@ -29,6 +30,7 @@ export interface MenuOption {
   numericPrice: number;
   details?: { [key in Language]: string };
   capacity: number;
+  drinkCapacity: number;
 }
 
 export const EMPANADAS: Empanada[] = [
@@ -192,15 +194,16 @@ export const DRINKS: DrinkCategory[] = [
     title: { pt: 'Águas', en: 'Water', es: 'Aguas' },
     items: [
       { id: 'd7', name: { pt: 'Serra da Estrela 0.5', en: 'Serra da Estrela 0.5', es: 'Serra da Estrela 0.5' }, price: '2 €', numericPrice: 2 },
-      { id: 'd8', name: { pt: 'Frize', en: 'Frize', es: 'Frize' }, price: '2,3 €', numericPrice: 2.3 }
+      { id: 'd8', name: { pt: 'Frize', en: 'Frize', es: 'Frize' }, price: '2,3 €', numericPrice: 2.3 },
+      { id: 'd17', name: { pt: 'Água das Pedras 0.75', en: 'Pedras Water 0.75', es: 'Agua Pedras 0.75' }, price: '4,5 €', numericPrice: 4.5, premium: true }
     ]
   },
   {
     title: { pt: 'Cervejas', en: 'Beers', es: 'Cervezas' },
     items: [
-      { id: 'd9', name: { pt: 'Corona', en: 'Corona', es: 'Corona' }, price: '3,5 €', numericPrice: 3.5 },
+      { id: 'd9', name: { pt: 'Corona', en: 'Corona', es: 'Corona' }, price: '3,5 €', numericPrice: 3.5, premium: true },
       { id: 'd10', name: { pt: 'Estrella Damm 0.25', en: 'Estrella Damm 0.25', es: 'Estrella Damm 0.25' }, price: '2 €', numericPrice: 2 },
-      { id: 'd11', name: { pt: 'Estrella Damm 0.33', en: 'Estrella Damm 0.33', es: 'Estrella Damm 0.33' }, price: '3 €', numericPrice: 3 },
+      { id: 'd11', name: { pt: 'Estrella Damm 0.33', en: 'Estrella Damm 0.33', es: 'Estrella Damm 0.33' }, price: '3 €', numericPrice: 3, premium: true },
       { id: 'd12', name: { pt: 'Damm Free 0.25', en: 'Damm Free 0.25', es: 'Damm Free 0.25' }, price: '2,1 €', numericPrice: 2.1 }
     ]
   },
@@ -213,9 +216,9 @@ export const DRINKS: DrinkCategory[] = [
     ]
   },
   {
-    title: { pt: 'Vinho a Copo', en: 'Glass of Wine', es: 'Copa de Vino' },
+    title: { pt: 'Vinho', en: 'Wine', es: 'Vino' },
     items: [
-      { id: 'd16', name: { pt: 'Vinho a Copo', en: 'Glass of Wine', es: 'Copa de Vino' }, price: '4 €', numericPrice: 4 }
+      { id: 'd16', name: { pt: 'Vinho a Copo', en: 'Glass of Wine', es: 'Copa de Vino' }, price: '4 €', numericPrice: 4, premium: true }
     ]
   }
 ];
@@ -227,7 +230,8 @@ export const MENUS: MenuOption[] = [
     price: '12,7 €',
     numericPrice: 12.7,
     details: { pt: '3 Empanadas + 1 Bebida', en: '3 Empanadas + 1 Drink', es: '3 Empanadas + 1 Bebida' },
-    capacity: 3
+    capacity: 3,
+    drinkCapacity: 1
   },
   {
     id: 'm6',
@@ -235,15 +239,17 @@ export const MENUS: MenuOption[] = [
     price: '25,4 €',
     numericPrice: 25.4,
     details: { pt: '6 Empanadas + 2 Bebidas', en: '6 Empanadas + 2 Drinks', es: '6 Empanadas + 2 Bebidas' },
-    capacity: 6
+    capacity: 6,
+    drinkCapacity: 2
   },
   {
     id: 'm12',
     title: { pt: 'Menu 12 Empanadas', en: 'Menu 12 Empanadas', es: 'Menú 12 Empanadas' },
     price: '46,4 €',
     numericPrice: 46.4,
-    details: { pt: '12 Empanadas + 2 Bebidas', en: '12 Empanadas + 2 Drinks', es: '12 Empanadas + 2 Bebidas' },
-    capacity: 12
+    details: { pt: '12 Empanadas + 4 Bebidas', en: '12 Empanadas + 4 Drinks', es: '12 Empanadas + 4 Bebidas' },
+    capacity: 12,
+    drinkCapacity: 4
   }
 ];
 
@@ -254,7 +260,8 @@ export const TASTING_MENUS: MenuOption[] = [
     price: '21 €',
     numericPrice: 21,
     details: { pt: '6 Empanadas', en: '6 Empanadas', es: '6 Empanadas' },
-    capacity: 6
+    capacity: 6,
+    drinkCapacity: 0
   },
   {
     id: 't12',
@@ -262,7 +269,8 @@ export const TASTING_MENUS: MenuOption[] = [
     price: '41 €',
     numericPrice: 41,
     details: { pt: '12 Empanadas', en: '12 Empanadas', es: '12 Empanadas' },
-    capacity: 12
+    capacity: 12,
+    drinkCapacity: 0
   }
 ];
 
@@ -296,7 +304,14 @@ export const UI_TEXT = {
     saveChanges: { pt: 'Guardar alterações', en: 'Save changes', es: 'Guardar cambios' },
     popularCombo: { pt: 'Combinação popular', en: 'Popular combo', es: 'Combinación popular' },
     autoFill: { pt: 'Preencher automaticamente', en: 'Fill automatically', es: 'Rellenar automáticamente' },
-    houseChoice: { pt: 'Escolha da casa', en: 'House choice', es: 'Elección de la casa' }
+    houseChoice: { pt: 'Escolha da casa', en: 'House choice', es: 'Elección de la casa' },
+    chooseDrinks: { pt: 'Escolhe {count} bebidas incluídas', en: 'Choose {count} included drinks', es: 'Elige {count} bebidas incluidas' },
+    drinksRemaining: { pt: '{current} de {total} bebidas selecionadas', en: '{current} of {total} drinks selected', es: '{current} de {total} bebidas seleccionadas' },
+    premiumNotice: { pt: 'Algumas bebidas não estão incluídas no menu base', en: 'Some drinks are not included in the base menu', es: 'Algunas bebidas no estão incluídas en el menú base' },
+    premiumWarning: { pt: 'Esta bebida não está incluída no menu — será adicionada a diferença de preço', en: 'This drink is not included in the menu — price difference will be added', es: 'Esta bebida no está incluida en el menú — se añadirá la diferencia de precio' },
+    extra: { pt: 'Extra', en: 'Extra', es: 'Extra' },
+    next: { pt: 'Próximo: Bebidas', en: 'Next: Drinks', es: 'Siguiente: Bebidas' },
+    back: { pt: 'Voltar', en: 'Back', es: 'Volver' }
   },
   suggestions: {
     menu: { pt: 'Queres transformar isto num menu? Fica mais económico 🔥', en: 'Want to turn this into a menu? It\'s more economical 🔥', es: '¿Quieres convertir esto en un menú? Es más económico 🔥' },

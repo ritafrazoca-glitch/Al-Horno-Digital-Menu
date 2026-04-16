@@ -49,11 +49,14 @@ interface CartItem {
   price: number;
   quantity: number;
   flavors?: Record<string, number>;
+  drinks?: Record<string, number>;
 }
 
 interface CustomizingMenu {
   menu: MenuOption;
   flavors: Record<string, number>;
+  drinks: Record<string, number>;
+  step: 'flavors' | 'drinks';
   isEditing?: boolean;
   cartId?: string;
 }
@@ -166,6 +169,8 @@ export default function App() {
     setCustomizingMenu({
       menu,
       flavors: isEditing && cartId ? { ...cart[cartId].flavors } : {},
+      drinks: isEditing && cartId ? { ...cart[cartId].drinks } : {},
+      step: 'flavors',
       isEditing,
       cartId
     });
@@ -202,6 +207,36 @@ export default function App() {
     });
   };
 
+  const addDrinkToMenu = (drinkId: string) => {
+    if (!customizingMenu) return;
+    const currentCount = Object.values(customizingMenu.drinks).reduce((a, b) => (a as number) + (b as number), 0);
+    if (currentCount >= customizingMenu.menu.drinkCapacity) return;
+
+    setCustomizingMenu(prev => {
+      if (!prev) return null;
+      return {
+        ...prev,
+        drinks: {
+          ...prev.drinks,
+          [drinkId]: (prev.drinks[drinkId] || 0) + 1
+        }
+      };
+    });
+  };
+
+  const removeDrinkFromMenu = (drinkId: string) => {
+    setCustomizingMenu(prev => {
+      if (!prev || !prev.drinks[drinkId]) return prev;
+      const newDrinks = { ...prev.drinks };
+      if (newDrinks[drinkId] <= 1) {
+        delete newDrinks[drinkId];
+      } else {
+        newDrinks[drinkId]--;
+      }
+      return { ...prev, drinks: newDrinks };
+    });
+  };
+
   const autoFillFlavors = () => {
     if (!customizingMenu) return;
     const popularCodes = EMPANADAS.filter(e => e.popular).map(e => e.code);
@@ -220,9 +255,34 @@ export default function App() {
 
   const confirmSelection = () => {
     if (!customizingMenu || !lang) return;
-    const { menu, flavors, isEditing, cartId } = customizingMenu;
-    const currentCount = Object.values(flavors).reduce((a, b) => (a as number) + (b as number), 0);
-    if (currentCount !== menu.capacity) return;
+    const { menu, flavors, drinks, step, isEditing, cartId } = customizingMenu;
+    
+    if (step === 'flavors') {
+      const currentCount = Object.values(flavors).reduce((a, b) => (a as number) + (b as number), 0);
+      if (currentCount === menu.capacity) {
+        if (menu.drinkCapacity > 0) {
+          setCustomizingMenu(prev => prev ? { ...prev, step: 'drinks' } : null);
+          window.scrollTo(0, 0);
+          return;
+        }
+        // Fall through to finalize if no drinks needed
+      } else {
+        return;
+      }
+    }
+
+    const currentDrinkCount = Object.values(drinks).reduce((a, b) => (a as number) + (b as number), 0);
+    if (currentDrinkCount !== menu.drinkCapacity) return;
+
+    // Calculate extra cost for premium drinks
+    let extraCost = 0;
+    Object.entries(drinks).forEach(([drinkId, count]) => {
+      const drink = DRINKS.flatMap(c => c.items).find(d => d.id === drinkId);
+      if (drink?.premium) {
+        // Difference between premium price and standard menu drink price (2.5€)
+        extraCost += (drink.numericPrice - 2.5) * (count as number);
+      }
+    });
 
     const type = menu.id.startsWith('m') ? 'menu' : 'tasting';
     const id = isEditing && cartId ? cartId : `${menu.id}_${Date.now()}`;
@@ -233,9 +293,10 @@ export default function App() {
         id,
         type,
         name: menu.title,
-        price: menu.numericPrice,
+        price: menu.numericPrice + extraCost,
         quantity: isEditing && cartId ? prev[cartId].quantity : 1,
-        flavors
+        flavors,
+        drinks
       }
     }));
 
@@ -246,6 +307,11 @@ export default function App() {
   const currentSelectionCount = useMemo(() => {
     if (!customizingMenu) return 0;
     return Object.values(customizingMenu.flavors).reduce((a, b) => (a as number) + (b as number), 0);
+  }, [customizingMenu]);
+
+  const currentDrinkCount = useMemo(() => {
+    if (!customizingMenu) return 0;
+    return Object.values(customizingMenu.drinks).reduce((a, b) => (a as number) + (b as number), 0);
   }, [customizingMenu]);
 
   const cartTotal = useMemo(() => {
@@ -635,22 +701,37 @@ export default function App() {
             >
               <div className="sticky top-12 z-40 -mx-5 px-5 py-4 bg-brand-bg/95 backdrop-blur-md border-b border-brand-accent/10 flex flex-col gap-3">
                 <div className="flex items-center justify-between">
-                  <div>
-                    <h2 className="text-xl font-black text-brand-text italic uppercase">
-                      {UI_TEXT.customization.choose[lang].replace('{count}', customizingMenu.menu.capacity.toString())}
+                  <div className="flex-grow">
+                    <h2 className="text-xl font-black text-brand-text italic uppercase leading-tight">
+                      {customizingMenu.step === 'flavors' 
+                        ? UI_TEXT.customization.choose[lang].replace('{count}', customizingMenu.menu.capacity.toString())
+                        : UI_TEXT.customization.chooseDrinks[lang].replace('{count}', customizingMenu.menu.drinkCapacity.toString())
+                      }
                     </h2>
                     <p className={cn(
                       "text-sm font-bold flex items-center gap-2",
-                      currentSelectionCount === customizingMenu.menu.capacity ? "text-green-600" : "text-brand-primary"
+                      (customizingMenu.step === 'flavors' ? currentSelectionCount === customizingMenu.menu.capacity : currentDrinkCount === customizingMenu.menu.drinkCapacity) 
+                        ? "text-green-600" 
+                        : "text-brand-primary"
                     )}>
-                      {currentSelectionCount === customizingMenu.menu.capacity ? (
-                        <><Sparkles size={14} /> {UI_TEXT.customization.completed[lang]}</>
+                      {customizingMenu.step === 'flavors' ? (
+                        currentSelectionCount === customizingMenu.menu.capacity ? (
+                          <><Sparkles size={14} /> {UI_TEXT.customization.completed[lang]}</>
+                        ) : (
+                          UI_TEXT.customization.remaining[lang].replace('{count}', (customizingMenu.menu.capacity - currentSelectionCount).toString())
+                        )
                       ) : (
-                        UI_TEXT.customization.remaining[lang].replace('{count}', (customizingMenu.menu.capacity - currentSelectionCount).toString())
+                        currentDrinkCount === customizingMenu.menu.drinkCapacity ? (
+                          <><Sparkles size={14} /> {UI_TEXT.customization.completed[lang]}</>
+                        ) : (
+                          UI_TEXT.customization.drinksRemaining[lang]
+                            .replace('{current}', currentDrinkCount.toString())
+                            .replace('{total}', customizingMenu.menu.drinkCapacity.toString())
+                        )
                       )}
                     </p>
                   </div>
-                  <div className="w-14 h-14 rounded-full border-4 border-brand-accent/10 flex items-center justify-center relative shadow-inner">
+                  <div className="w-14 h-14 rounded-full border-4 border-brand-accent/10 flex items-center justify-center relative shadow-inner shrink-0">
                     <svg className="absolute -rotate-90 w-full h-full">
                       <circle
                         cx="28" cy="28" r="24"
@@ -659,92 +740,183 @@ export default function App() {
                         strokeWidth="4"
                         className="text-brand-primary"
                         strokeDasharray={150.8}
-                        strokeDashoffset={150.8 - (150.8 * currentSelectionCount) / customizingMenu.menu.capacity}
+                        strokeDashoffset={150.8 - (150.8 * (customizingMenu.step === 'flavors' ? currentSelectionCount : currentDrinkCount)) / (customizingMenu.step === 'flavors' ? customizingMenu.menu.capacity : customizingMenu.menu.drinkCapacity)}
                         strokeLinecap="round"
                         style={{ transition: 'stroke-dashoffset 0.4s cubic-bezier(0.4, 0, 0.2, 1)' }}
                       />
                     </svg>
-                    <span className="text-sm font-black text-brand-text">{currentSelectionCount}/{customizingMenu.menu.capacity}</span>
+                    <span className="text-sm font-black text-brand-text">
+                      {customizingMenu.step === 'flavors' ? `${currentSelectionCount}/${customizingMenu.menu.capacity}` : `${currentDrinkCount}/${customizingMenu.menu.drinkCapacity}`}
+                    </span>
                   </div>
                 </div>
 
-                <div className="flex gap-2">
-                  <button 
-                    onClick={autoFillFlavors}
-                    className="flex-grow bg-white text-brand-primary border-2 border-brand-primary/20 px-4 py-2.5 rounded-2xl text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 active:scale-95 shadow-sm transition-all"
-                  >
-                    <Sparkles size={14} className="text-orange-500" />
-                    {UI_TEXT.customization.autoFill[lang]}
-                  </button>
-                </div>
+                {customizingMenu.step === 'flavors' && (
+                  <div className="flex gap-2">
+                    <button 
+                      onClick={autoFillFlavors}
+                      className="flex-grow bg-white text-brand-primary border-2 border-brand-primary/20 px-4 py-2.5 rounded-2xl text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 active:scale-95 shadow-sm transition-all"
+                    >
+                      <Sparkles size={14} className="text-orange-500" />
+                      {UI_TEXT.customization.autoFill[lang]}
+                    </button>
+                  </div>
+                )}
+
+                {customizingMenu.step === 'drinks' && (
+                  <div className="px-3 py-2 bg-orange-50 border border-orange-200 rounded-xl text-[10px] text-orange-800 font-medium">
+                    <p className="flex items-center gap-2">
+                       <Sparkles size={12} className="text-orange-500" />
+                       {UI_TEXT.customization.premiumNotice[lang]}
+                    </p>
+                  </div>
+                )}
               </div>
 
-              <div className="grid grid-cols-1 gap-3">
-                {EMPANADAS.map((emp) => (
-                  <div key={emp.code} className="glass-card p-3 flex items-center gap-3 relative overflow-hidden group">
-                    {emp.popular && (
-                      <div className="absolute top-0 right-0 bg-brand-primary text-white text-[7px] font-black px-2 py-0.5 rounded-bl-lg uppercase tracking-tighter">
-                        {UI_TEXT.mostPopular[lang]}
+              {customizingMenu.step === 'flavors' ? (
+                <div className="grid grid-cols-1 gap-3">
+                  {EMPANADAS.map((emp) => (
+                    <div key={emp.code} className="glass-card p-3 flex items-center gap-3 relative overflow-hidden group">
+                      {emp.popular && (
+                        <div className="absolute top-0 right-0 bg-brand-primary text-white text-[7px] font-black px-2 py-0.5 rounded-bl-lg uppercase tracking-tighter">
+                          {UI_TEXT.mostPopular[lang]}
+                        </div>
+                      )}
+                      <div className="w-10 h-10 rounded-full bg-brand-primary/10 text-brand-primary flex flex-shrink-0 items-center justify-center font-black shadow-inner border border-brand-primary/5">
+                        {emp.code}
                       </div>
-                    )}
-                    <div className="w-10 h-10 rounded-full bg-brand-primary/10 text-brand-primary flex flex-shrink-0 items-center justify-center font-black shadow-inner border border-brand-primary/5">
-                      {emp.code}
+                      <div className="flex-grow min-w-0">
+                         <div className="flex items-center gap-1.5 flex-wrap">
+                            <h4 className="font-bold text-sm text-brand-text truncate leading-tight">{emp.name[lang]}</h4>
+                            <div className="flex gap-0.5">
+                              {emp.spicy && <span className="text-[10px]">🌶️</span>}
+                              {emp.vegetarian && <span className="text-[10px]">🥬</span>}
+                            </div>
+                         </div>
+                         <p className="text-[10px] text-brand-text/50 truncate italic mt-0.5">{emp.description[lang]}</p>
+                      </div>
+                      <div className="flex items-center gap-2 bg-brand-accent/5 p-1 rounded-xl border border-brand-accent/10">
+                        <button 
+                          onClick={() => removeFlavor(emp.code)}
+                          className={cn(
+                            "w-8 h-8 rounded-lg flex items-center justify-center transition-all",
+                            customizingMenu.flavors[emp.code] ? "bg-white text-brand-primary shadow-sm active:scale-90" : "text-brand-text/10"
+                          )}
+                          disabled={!customizingMenu.flavors[emp.code]}
+                        >
+                          <Minus size={16} />
+                        </button>
+                        <span className={cn(
+                          "w-4 text-center font-black text-sm tabular-nums",
+                          customizingMenu.flavors[emp.code] ? "text-brand-primary" : "text-brand-text/10"
+                        )}>
+                          {customizingMenu.flavors[emp.code] || 0}
+                        </span>
+                        <button 
+                          onClick={() => addFlavor(emp.code)}
+                          className={cn(
+                            "w-8 h-8 rounded-lg flex items-center justify-center shadow-sm active:scale-90 transition-all",
+                            currentSelectionCount >= customizingMenu.menu.capacity ? "bg-brand-accent/20 text-brand-text/20" : "bg-brand-primary text-white"
+                          )}
+                          disabled={currentSelectionCount >= customizingMenu.menu.capacity}
+                        >
+                          <Plus size={16} />
+                        </button>
+                      </div>
                     </div>
-                    <div className="flex-grow min-w-0">
-                       <div className="flex items-center gap-1.5 flex-wrap">
-                          <h4 className="font-bold text-sm text-brand-text truncate leading-tight">{emp.name[lang]}</h4>
-                          <div className="flex gap-0.5">
-                            {emp.spicy && <span className="text-[10px]">🌶️</span>}
-                            {emp.vegetarian && <span className="text-[10px]">🥬</span>}
+                  ))}
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  {DRINKS.map((category, idx) => (
+                    <div key={idx} className="space-y-3">
+                      <h3 className="text-brand-primary font-bold text-[10px] uppercase tracking-widest px-1">
+                        {category.title[lang]}
+                      </h3>
+                      <div className="grid grid-cols-1 gap-2">
+                        {category.items.map((drink) => (
+                          <div key={drink.id} className="glass-card p-3 flex flex-col gap-2 relative">
+                            <div className="flex justify-between items-center">
+                              <div className="flex flex-col">
+                                <span className="text-sm font-bold text-brand-text leading-tight">{drink.name[lang]}</span>
+                                {drink.premium && (
+                                  <span className="text-[9px] font-black text-brand-primary uppercase tracking-tighter mt-0.5">
+                                    + {(drink.numericPrice - 2.5).toFixed(2)} € {UI_TEXT.customization.extra[lang]}
+                                  </span>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-2 bg-brand-accent/5 p-1 rounded-lg border border-brand-accent/5">
+                                <button 
+                                  onClick={() => removeDrinkFromMenu(drink.id)}
+                                  className={cn(
+                                    "w-7 h-7 rounded-md flex items-center justify-center transition-all",
+                                    customizingMenu.drinks[drink.id] ? "bg-white text-brand-primary shadow-sm pointer-events-auto" : "text-brand-text/10 pointer-events-none"
+                                  )}
+                                >
+                                  <Minus size={14} />
+                                </button>
+                                <span className={cn(
+                                  "min-w-[14px] text-center font-bold text-xs tabular-nums",
+                                  customizingMenu.drinks[drink.id] ? "text-brand-primary" : "text-brand-text/10"
+                                )}>
+                                  {customizingMenu.drinks[drink.id] || 0}
+                                </span>
+                                <button 
+                                  onClick={() => addDrinkToMenu(drink.id)}
+                                  className={cn(
+                                    "w-7 h-7 rounded-md bg-brand-primary text-white flex items-center justify-center shadow-sm active:scale-90 transition-all",
+                                    currentDrinkCount >= customizingMenu.menu.drinkCapacity ? "bg-brand-accent/20 text-brand-text/20" : ""
+                                  )}
+                                  disabled={currentDrinkCount >= customizingMenu.menu.drinkCapacity}
+                                >
+                                  <Plus size={14} />
+                                </button>
+                              </div>
+                            </div>
+                            
+                            {drink.premium && customizingMenu.drinks[drink.id] && (
+                              <p className="text-[9px] text-orange-600 font-bold bg-orange-50 p-2 rounded-lg border border-orange-100 italic">
+                                {UI_TEXT.customization.premiumWarning[lang]}
+                              </p>
+                            )}
                           </div>
-                       </div>
-                       <p className="text-[10px] text-brand-text/50 truncate italic mt-0.5">{emp.description[lang]}</p>
+                        ))}
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2 bg-brand-accent/5 p-1 rounded-xl border border-brand-accent/10">
-                      <button 
-                        onClick={() => removeFlavor(emp.code)}
-                        className={cn(
-                          "w-8 h-8 rounded-lg flex items-center justify-center transition-all",
-                          customizingMenu.flavors[emp.code] ? "bg-white text-brand-primary shadow-sm active:scale-90" : "text-brand-text/10"
-                        )}
-                        disabled={!customizingMenu.flavors[emp.code]}
-                      >
-                        <Minus size={16} />
-                      </button>
-                      <span className={cn(
-                        "w-4 text-center font-black text-sm tabular-nums",
-                        customizingMenu.flavors[emp.code] ? "text-brand-primary" : "text-brand-text/10"
-                      )}>
-                        {customizingMenu.flavors[emp.code] || 0}
-                      </span>
-                      <button 
-                        onClick={() => addFlavor(emp.code)}
-                        className={cn(
-                          "w-8 h-8 rounded-lg flex items-center justify-center shadow-sm active:scale-90 transition-all",
-                          currentSelectionCount >= customizingMenu.menu.capacity ? "bg-brand-accent/20 text-brand-text/20" : "bg-brand-primary text-white"
-                        )}
-                        disabled={currentSelectionCount >= customizingMenu.menu.capacity}
-                      >
-                        <Plus size={16} />
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
 
-              <div className="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-brand-bg via-brand-bg/80 to-transparent z-50">
+              <div className="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-brand-bg via-brand-bg/80 to-transparent z-50 flex gap-2">
+                {customizingMenu.step === 'drinks' && (
+                  <button 
+                    onClick={() => setCustomizingMenu(prev => prev ? { ...prev, step: 'flavors' } : null)}
+                    className="flex-shrink-0 p-4 rounded-2xl bg-white border-2 border-brand-accent/20 text-brand-text shadow-xl active:scale-95 transition-all"
+                  >
+                    <ArrowLeft size={24} />
+                  </button>
+                )}
                 <button 
                   onClick={confirmSelection}
-                  disabled={currentSelectionCount !== customizingMenu.menu.capacity}
+                  disabled={customizingMenu.step === 'flavors' ? currentSelectionCount !== customizingMenu.menu.capacity : currentDrinkCount !== customizingMenu.menu.drinkCapacity}
                   className={cn(
-                    "w-full max-w-xl mx-auto p-4 rounded-2xl font-black text-lg shadow-xl transition-all flex items-center justify-center gap-3 uppercase italic tracking-wider",
-                    currentSelectionCount === customizingMenu.menu.capacity 
+                    "flex-grow p-4 rounded-2xl font-black text-lg shadow-xl transition-all flex items-center justify-center gap-3 uppercase italic tracking-wider",
+                    (customizingMenu.step === 'flavors' ? currentSelectionCount === customizingMenu.menu.capacity : currentDrinkCount === customizingMenu.menu.drinkCapacity) 
                       ? "bg-brand-primary text-white active:scale-95" 
                       : "bg-brand-accent/20 text-brand-text/20 cursor-not-allowed"
                   )}
                 >
-                  <ShoppingBag size={22} strokeWidth={2.5} />
-                  {customizingMenu.isEditing ? UI_TEXT.customization.saveChanges[lang] : UI_TEXT.customization.addToOrder[lang]}
+                  {customizingMenu.step === 'flavors' ? (
+                    <>
+                      {UI_TEXT.customization.next[lang]}
+                      <ArrowRight size={22} strokeWidth={2.5} />
+                    </>
+                  ) : (
+                    <>
+                      <ShoppingBag size={22} strokeWidth={2.5} />
+                      {customizingMenu.isEditing ? UI_TEXT.customization.saveChanges[lang] : UI_TEXT.customization.addToOrder[lang]}
+                    </>
+                  )}
                 </button>
               </div>
             </motion.div>
@@ -880,6 +1052,19 @@ export default function App() {
                                     </div>
                                   );
                                 })}
+                                {item.drinks && Object.entries(item.drinks).length > 0 && (
+                                  <div className="mt-2 pt-2 border-t border-brand-accent/10 space-y-1">
+                                    {Object.entries(item.drinks).map(([drinkId, count]) => {
+                                      const drink = DRINKS.flatMap(c => c.items).find(d => d.id === drinkId);
+                                      return (
+                                        <div key={drinkId} className="flex justify-between text-[11px]">
+                                          <span className="text-brand-primary font-bold">{count}x {drink?.name[lang!]}</span>
+                                          {drink?.premium && <span className="text-[9px] bg-brand-primary/10 text-brand-primary px-1 rounded font-black italic">EXTRA</span>}
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                )}
                              </div>
                              <button 
                                 onClick={() => {
@@ -974,15 +1159,29 @@ export default function App() {
                         <span className="font-bold text-brand-text/60">{(item.price * item.quantity).toFixed(2)} €</span>
                       </div>
                       {item.flavors && (
-                        <div className="pl-8 pb-2 space-y-0.5">
-                          {Object.entries(item.flavors).map(([code, count]) => {
-                            const emp = EMPANADAS.find(e => e.code === code);
-                            return (
-                              <p key={code} className="text-[12px] text-brand-text/60">
-                                {count}x {emp?.name[lang!]} ({code})
-                              </p>
-                            );
-                          })}
+                        <div className="pl-8 pb-2 space-y-1">
+                          <div className="space-y-0.5">
+                            {Object.entries(item.flavors).map(([code, count]) => {
+                              const emp = EMPANADAS.find(e => e.code === code);
+                              return (
+                                <p key={code} className="text-[12px] text-brand-text/60">
+                                  {count}x {emp?.name[lang!]} ({code})
+                                </p>
+                              );
+                            })}
+                          </div>
+                          {item.drinks && Object.entries(item.drinks).length > 0 && (
+                            <div className="mt-1 pt-1 border-t border-brand-accent/5 space-y-0.5">
+                               {Object.entries(item.drinks).map(([drinkId, count]) => {
+                                 const drink = DRINKS.flatMap(c => c.items).find(d => d.id === drinkId);
+                                 return (
+                                   <p key={drinkId} className="text-[12px] font-bold text-brand-primary italic">
+                                     {count}x {drink?.name[lang!]} {drink?.premium ? '(+ EXTRA)' : ''}
+                                   </p>
+                                 );
+                               })}
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>
