@@ -27,7 +27,11 @@ import {
   ShoppingBag,
   Tag,
   X,
-  LayoutList
+  LayoutList,
+  Share2,
+  Copy,
+  Smartphone,
+  CheckCircle2
 } from 'lucide-react';
 import { 
   Language, 
@@ -36,6 +40,7 @@ import {
   MENUS, 
   TASTING_MENUS, 
   UI_TEXT,
+  ALLERGENS,
   Empanada,
   Drink,
   MenuOption
@@ -68,6 +73,7 @@ export default function App() {
   const [view, setView] = useState<View>('language');
   const [cart, setCart] = useState<Record<string, CartItem>>({});
   const [customizingMenu, setCustomizingMenu] = useState<CustomizingMenu | null>(null);
+  const [showCopiedToast, setShowCopiedToast] = useState(false);
 
   // Sync with localStorage
   useEffect(() => {
@@ -90,6 +96,68 @@ export default function App() {
     setLang(l);
     setView('home');
     window.scrollTo(0, 0);
+  };
+
+  const getOrderSummaryText = () => {
+    let text = `📦 *${UI_TEXT.cart.title[lang!]}*\n\n`;
+    Object.values(cart).forEach((item: any) => {
+      text += `${item.quantity}x ${item.name[lang!]} - ${(item.price * item.quantity).toFixed(2)} €\n`;
+      if (item.flavors) {
+        Object.entries(item.flavors).forEach(([code, count]) => {
+          const emp = EMPANADAS.find(e => e.code === code);
+          text += `  └ ${count}x ${emp?.name[lang!]} (${code})\n`;
+        });
+        if (item.drinks && Object.entries(item.drinks).length > 0) {
+          Object.entries(item.drinks).forEach(([drinkId, count]) => {
+            const drink = DRINKS.flatMap(c => c.items).find(d => d.id === drinkId);
+            text += `  └ ${count}x ${drink?.name[lang!]} ${drink?.premium ? '(EXTRA)' : ''}\n`;
+          });
+        }
+      }
+    });
+    text += `\n💰 *Total: ${cartTotal.toFixed(2)} €*`;
+    return text;
+  };
+
+  const handleShare = async () => {
+    const text = getOrderSummaryText();
+    
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: UI_TEXT.cart.title[lang!],
+          text: text,
+        });
+      } catch (err) {
+        console.error('Error sharing:', err);
+      }
+    } else {
+      // Fallback: Copy to clipboard
+      try {
+        await navigator.clipboard.writeText(text);
+        setShowCopiedToast(true);
+        setTimeout(() => setShowCopiedToast(false), 2000);
+      } catch (err) {
+        console.error('Error copying:', err);
+      }
+    }
+  };
+
+  const handleInstagramShare = () => {
+    // Copy the order text first so they can paste it
+    const text = getOrderSummaryText();
+    navigator.clipboard.writeText(text).then(() => {
+      setShowCopiedToast(true);
+      setTimeout(() => {
+        setShowCopiedToast(false);
+        // Open Instagram profile
+        window.open('https://www.instagram.com/al.horno_pt/', '_blank');
+      }, 1000);
+    });
+  };
+
+  const handleSaveToNotes = () => {
+    handleShare();
   };
 
   // Handle navigation
@@ -287,9 +355,18 @@ export default function App() {
     // Step is 'summary'
     const currentDrinkCountSummary = Object.values(drinks).reduce((a, b) => (a as number) + (b as number), 0);
 
-    // Calculate price: Base Menu + [Premium Upcharges for Included] + [Full Price for Extras]
-    // To give the best deal, we assign "included" slots to the most expensive drinks first
+    // Calculate price: Base Menu + [Premium Upcharges for Included] + [Full Price for Extras] + [Premium Empanada Upcharges]
     let extraCost = 0;
+
+    // Empanada premium upcharge
+    Object.entries(flavors).forEach(([code, count]) => {
+      const emp = EMPANADAS.find(e => e.code === code);
+      if (emp?.premium) {
+        // All empanadas in menus are assumed to be base 3.5€. Premium ones add the difference.
+        extraCost += (emp.price - 3.5) * (count as number);
+      }
+    });
+
     const allSelectedDrinks: Drink[] = [];
     Object.entries(drinks).forEach(([drinkId, count]) => {
       const drink = DRINKS.flatMap(c => c.items).find(d => d.id === drinkId);
@@ -348,9 +425,18 @@ export default function App() {
 
   const customizingMenuPrice = useMemo(() => {
     if (!customizingMenu) return 0;
-    const { menu, drinks } = customizingMenu;
+    const { menu, drinks, flavors } = customizingMenu;
     
     let extraCost = 0;
+
+    // Empanada premium upcharge
+    Object.entries(flavors).forEach(([code, count]) => {
+      const emp = EMPANADAS.find(e => e.code === code);
+      if (emp?.premium) {
+        extraCost += (emp.price - 3.5) * (count as number);
+      }
+    });
+
     const allSelectedDrinks: Drink[] = [];
     Object.entries(drinks).forEach(([drinkId, count]) => {
       const drink = DRINKS.flatMap(c => c.items).find(d => d.id === drinkId);
@@ -582,61 +668,157 @@ export default function App() {
                 </p>
               </div>
 
-              <div className="grid grid-cols-1 gap-3">
-                {EMPANADAS.map((item) => (
-                  <div 
-                    key={item.code} 
-                    className="glass-card p-3 relative overflow-hidden group transition-all"
-                  >
-                    {item.popular && (
-                      <div className="absolute top-0 right-12 bg-brand-primary text-white text-[8px] font-bold px-1.5 py-0.5 rounded-b-lg flex items-center gap-0.5 z-10">
-                        <Star size={8} fill="currentColor" />
-                        {UI_TEXT.mostPopular[lang]}
-                      </div>
-                    )}
-                    <div className="flex gap-3 items-center">
-                      <div className="flex-shrink-0 w-9 h-9 rounded-full bg-brand-primary text-white flex items-center justify-center font-bold text-sm shadow-inner">
-                        {item.code}
-                      </div>
-                      <div className="flex-grow min-w-0">
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          <h3 className="font-bold text-sm text-brand-text leading-tight">{item.name[lang]}</h3>
-                          <div className="flex gap-0.5 text-[10px]">
-                            {item.spicy && <span title="Picante">🌶️</span>}
-                            {item.vegetarian && <span title="Vegetariano">🥬</span>}
+              <div className="space-y-8">
+                {/* Classicas Section */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 border-b-2 border-brand-accent/10 pb-2">
+                    <span className="w-2 h-6 bg-brand-primary rounded-full"></span>
+                    <h3 className="text-lg font-black text-brand-text uppercase tracking-tight">{UI_TEXT.sections.classicas[lang]}</h3>
+                  </div>
+                  <div className="grid grid-cols-1 gap-3">
+                    {EMPANADAS.filter(e => !e.premium).map((item) => (
+                      <div 
+                        key={item.code} 
+                        className="glass-card p-3 relative overflow-hidden group transition-all"
+                      >
+                        <div className="flex gap-3 items-center">
+                          <div className="flex-shrink-0 w-9 h-9 rounded-full bg-brand-primary text-white flex items-center justify-center font-bold text-sm shadow-inner">
+                            {item.code}
+                          </div>
+                          <div className="flex-grow min-w-0">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <h3 className="font-bold text-sm text-brand-text leading-tight">{item.name[lang]}</h3>
+                              <div className="flex gap-0.5 text-[10px]">
+                                {item.spicy && <span title="Picante">🌶️</span>}
+                                {item.vegetarian && <span title="Vegetariano">🥬</span>}
+                              </div>
+                            </div>
+                            <p className="text-[11px] text-brand-text/70 leading-snug mt-1 truncate">
+                              {item.description[lang]}
+                            </p>
+                            <div className="flex gap-1 mt-1.5 flex-wrap">
+                              {item.allergens.map(code => (
+                                <span key={code} className="text-[8px] font-bold w-3.5 h-3.5 flex items-center justify-center rounded-full border border-brand-text/10 text-brand-text/50 bg-white/50">
+                                  {code}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                          <div className="flex-shrink-0 flex items-center gap-2 bg-brand-accent/5 p-1 rounded-xl border border-brand-accent/10">
+                            <button 
+                              onClick={() => removeFromCart(item.code)}
+                              className={cn(
+                                "w-8 h-8 rounded-lg flex items-center justify-center transition-all",
+                                cart[item.code] ? "bg-white text-brand-primary shadow-sm active:scale-90" : "text-brand-text/20"
+                              )}
+                              disabled={!cart[item.code]}
+                            >
+                              <Minus size={16} />
+                            </button>
+                            <span className={cn(
+                              "w-4 text-center font-bold text-sm tabular-nums",
+                              cart[item.code] ? "text-brand-primary" : "text-brand-text/20"
+                            )}>
+                              {cart[item.code]?.quantity || 0}
+                            </span>
+                            <button 
+                              onClick={() => addToCart(item, 'empanada')}
+                              className="w-8 h-8 rounded-lg bg-brand-primary text-white flex items-center justify-center shadow-sm active:scale-90 transition-all"
+                            >
+                              <Plus size={16} />
+                            </button>
                           </div>
                         </div>
-                        <p className="text-[11px] text-brand-text/70 leading-snug mt-1 truncate">
-                          {item.description[lang]}
-                        </p>
                       </div>
-                      <div className="flex-shrink-0 flex items-center gap-2 bg-brand-accent/5 p-1 rounded-xl border border-brand-accent/10">
-                        <button 
-                          onClick={() => removeFromCart(item.code)}
-                          className={cn(
-                            "w-8 h-8 rounded-lg flex items-center justify-center transition-all",
-                            cart[item.code] ? "bg-white text-brand-primary shadow-sm active:scale-90" : "text-brand-text/20"
-                          )}
-                          disabled={!cart[item.code]}
-                        >
-                          <Minus size={16} />
-                        </button>
-                        <span className={cn(
-                          "w-4 text-center font-bold text-sm tabular-nums",
-                          cart[item.code] ? "text-brand-primary" : "text-brand-text/20"
-                        )}>
-                          {cart[item.code]?.quantity || 0}
-                        </span>
-                        <button 
-                          onClick={() => addToCart(item, 'empanada')}
-                          className="w-8 h-8 rounded-lg bg-brand-primary text-white flex items-center justify-center shadow-sm active:scale-90 transition-all"
-                        >
-                          <Plus size={16} />
-                        </button>
-                      </div>
-                    </div>
+                    ))}
                   </div>
-                ))}
+                </div>
+
+                {/* Premium Section */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 border-b-2 border-brand-accent/10 pb-2">
+                    <span className="w-2 h-6 bg-brand-accent rounded-full"></span>
+                    <h3 className="text-lg font-black text-brand-text uppercase tracking-tight">{UI_TEXT.sections.premium[lang]}</h3>
+                  </div>
+                  <div className="grid grid-cols-1 gap-3">
+                    {EMPANADAS.filter(e => e.premium).map((item) => (
+                      <div 
+                        key={item.code} 
+                        className="glass-card p-3 relative overflow-hidden group transition-all"
+                      >
+                        <div className="flex gap-3 items-center">
+                          <div className="flex-shrink-0 w-9 h-9 rounded-full bg-brand-accent text-white flex items-center justify-center font-bold text-sm shadow-inner">
+                            {item.code}
+                          </div>
+                          <div className="flex-grow min-w-0">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <h3 className="font-bold text-sm text-brand-text leading-tight">{item.name[lang]}</h3>
+                              <div className="flex gap-0.5 text-[10px]">
+                                {item.spicy && <span title="Picante">🌶️</span>}
+                                {item.vegetarian && <span title="Vegetariano">🥬</span>}
+                              </div>
+                            </div>
+                            <p className="text-[11px] text-brand-text/70 leading-snug mt-1 truncate">
+                              {item.description[lang]}
+                            </p>
+                            <div className="flex gap-1 mt-1.5 flex-wrap">
+                              {item.allergens.map(code => (
+                                <span key={code} className="text-[8px] font-bold w-3.5 h-3.5 flex items-center justify-center rounded-full border border-brand-text/10 text-brand-text/50 bg-white/50">
+                                  {code}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                          <div className="flex-shrink-0 flex items-center gap-2 bg-brand-accent/5 p-1 rounded-xl border border-brand-accent/10">
+                            <button 
+                              onClick={() => removeFromCart(item.code)}
+                              className={cn(
+                                "w-8 h-8 rounded-lg flex items-center justify-center transition-all",
+                                cart[item.code] ? "bg-white text-brand-primary shadow-sm active:scale-90" : "text-brand-text/20"
+                              )}
+                              disabled={!cart[item.code]}
+                            >
+                              <Minus size={16} />
+                            </button>
+                            <span className={cn(
+                              "w-4 text-center font-bold text-sm tabular-nums",
+                              cart[item.code] ? "text-brand-primary" : "text-brand-text/20"
+                            )}>
+                              {cart[item.code]?.quantity || 0}
+                            </span>
+                            <button 
+                              onClick={() => addToCart(item, 'empanada')}
+                              className="w-8 h-8 rounded-lg bg-brand-accent text-white flex items-center justify-center shadow-sm active:scale-90 transition-all"
+                            >
+                              <Plus size={16} />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Allergen Legend */}
+                <div className="bg-brand-accent/5 rounded-2xl p-4 border border-brand-accent/10">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Sparkles size={14} className="text-brand-primary" />
+                    <span className="text-[10px] font-black uppercase tracking-wider text-brand-text/60">Legenda de Alergénicos</span>
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-y-2 gap-x-4">
+                    {ALLERGENS.map(a => (
+                      <div key={a.code} className="flex items-center gap-2">
+                        <span className="text-[9px] font-bold w-4 h-4 flex items-center justify-center rounded-full border border-brand-text/10 text-brand-text bg-white">
+                          {a.code}
+                        </span>
+                        <span className="text-[9px] text-brand-text/70">{a.name[lang]}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <p className="text-[8px] text-brand-text/40 mt-4 leading-tight">
+                    Todos os produtos podem conter vestígios de glúten, leite, ovo, soja, frutos de casca rija e outros alergénios devido aos métodos de confeção e manipulação.
+                  </p>
+                </div>
               </div>
             </motion.div>
           )}
@@ -883,57 +1065,147 @@ export default function App() {
               {/* Step Content */}
               <div className="pb-40">
                 {customizingMenu.step === 'flavors' && (
-                  <div className="grid grid-cols-1 gap-3">
-                    {EMPANADAS.map((emp) => (
-                      <div key={emp.code} className="glass-card p-3 flex items-center gap-3 relative overflow-hidden group">
-                        {emp.popular && (
-                          <div className="absolute top-0 right-0 bg-brand-primary text-white text-[7px] font-black px-2 py-0.5 rounded-bl-lg uppercase tracking-tighter">
-                            {UI_TEXT.mostPopular[lang]}
-                          </div>
-                        )}
-                        <div className="w-10 h-10 rounded-full bg-brand-primary/10 text-brand-primary flex flex-shrink-0 items-center justify-center font-black shadow-inner border border-brand-primary/5">
-                          {emp.code}
-                        </div>
-                        <div className="flex-grow min-w-0">
-                           <div className="flex items-center gap-1.5 flex-wrap">
-                              <h4 className="font-bold text-sm text-brand-text truncate leading-tight">{emp.name[lang]}</h4>
-                              <div className="flex gap-0.5">
-                                {emp.spicy && <span className="text-[10px]">🌶️</span>}
-                                {emp.vegetarian && <span className="text-[10px]">🥬</span>}
-                              </div>
-                           </div>
-                           <p className="text-[10px] text-brand-text/50 truncate italic mt-0.5">{emp.description[lang]}</p>
-                        </div>
-                        <div className="flex items-center gap-2 bg-brand-accent/5 p-1 rounded-xl border border-brand-accent/10">
-                          <button 
-                            onClick={() => removeFlavor(emp.code)}
-                            className={cn(
-                              "w-8 h-8 rounded-lg flex items-center justify-center transition-all",
-                              customizingMenu.flavors[emp.code] ? "bg-white text-brand-primary shadow-sm active:scale-90" : "text-brand-text/10"
-                            )}
-                            disabled={!customizingMenu.flavors[emp.code]}
-                          >
-                            <Minus size={16} />
-                          </button>
-                          <span className={cn(
-                            "w-4 text-center font-black text-sm tabular-nums",
-                            customizingMenu.flavors[emp.code] ? "text-brand-primary" : "text-brand-text/10"
-                          )}>
-                            {customizingMenu.flavors[emp.code] || 0}
-                          </span>
-                          <button 
-                            onClick={() => addFlavor(emp.code)}
-                            className={cn(
-                              "w-8 h-8 rounded-lg flex items-center justify-center shadow-sm active:scale-90 transition-all",
-                              currentSelectionCount >= customizingMenu.menu.capacity ? "bg-brand-accent/20 text-brand-text/20" : "bg-brand-primary text-white"
-                            )}
-                            disabled={currentSelectionCount >= customizingMenu.menu.capacity}
-                          >
-                            <Plus size={16} />
-                          </button>
-                        </div>
+                  <div className="space-y-8">
+                    {/* Classicas Section */}
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2 border-b border-brand-accent/10 pb-1">
+                        <span className="w-1.5 h-4 bg-brand-primary rounded-full"></span>
+                        <h5 className="text-xs font-black text-brand-text uppercase tracking-wider">{UI_TEXT.sections.classicas[lang]}</h5>
                       </div>
-                    ))}
+                      <div className="grid grid-cols-1 gap-3">
+                        {EMPANADAS.filter(e => !e.premium).map((emp) => (
+                          <div key={emp.code} className="glass-card p-3 flex items-center gap-3 relative overflow-hidden group">
+                            <div className="w-10 h-10 rounded-full bg-brand-primary/10 text-brand-primary flex flex-shrink-0 items-center justify-center font-black shadow-inner border border-brand-primary/5">
+                              {emp.code}
+                            </div>
+                            <div className="flex-grow min-w-0">
+                               <div className="flex items-center gap-1.5 flex-wrap">
+                                  <h4 className="font-bold text-sm text-brand-text truncate leading-tight">{emp.name[lang]}</h4>
+                                  <div className="flex gap-0.5">
+                                    {emp.spicy && <span className="text-[10px]">🌶️</span>}
+                                    {emp.vegetarian && <span className="text-[10px]">🥬</span>}
+                                  </div>
+                               </div>
+                               <p className="text-[10px] text-brand-text/50 truncate italic mt-0.5">{emp.description[lang]}</p>
+                               <div className="flex gap-1 mt-1 flex-wrap">
+                                  {emp.allergens.map(code => (
+                                    <span key={code} className="text-[7px] font-bold w-3 h-3 flex items-center justify-center rounded-full border border-brand-text/10 text-brand-text/40 bg-white/50">
+                                      {code}
+                                    </span>
+                                  ))}
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-2 bg-brand-accent/5 p-1 rounded-xl border border-brand-accent/10">
+                              <button 
+                                onClick={() => removeFlavor(emp.code)}
+                                className={cn(
+                                  "w-8 h-8 rounded-lg flex items-center justify-center transition-all",
+                                  customizingMenu.flavors[emp.code] ? "bg-white text-brand-primary shadow-sm active:scale-90" : "text-brand-text/10"
+                                )}
+                                disabled={!customizingMenu.flavors[emp.code]}
+                              >
+                                <Minus size={16} />
+                              </button>
+                              <span className={cn(
+                                "w-4 text-center font-black text-sm tabular-nums",
+                                customizingMenu.flavors[emp.code] ? "text-brand-primary" : "text-brand-text/10"
+                              )}>
+                                {customizingMenu.flavors[emp.code] || 0}
+                              </span>
+                              <button 
+                                onClick={() => addFlavor(emp.code)}
+                                className={cn(
+                                  "w-8 h-8 rounded-lg flex items-center justify-center shadow-sm active:scale-90 transition-all",
+                                  currentSelectionCount >= customizingMenu.menu.capacity ? "bg-brand-accent/20 text-brand-text/20" : "bg-brand-primary text-white"
+                                )}
+                                disabled={currentSelectionCount >= customizingMenu.menu.capacity}
+                              >
+                                <Plus size={16} />
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Premium Section */}
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2 border-b border-brand-accent/10 pb-1">
+                        <span className="w-1.5 h-4 bg-brand-accent rounded-full"></span>
+                        <h5 className="text-xs font-black text-brand-text uppercase tracking-wider">{UI_TEXT.sections.premium[lang]}</h5>
+                      </div>
+                      <div className="grid grid-cols-1 gap-3">
+                        {EMPANADAS.filter(e => e.premium).map((emp) => (
+                          <div key={emp.code} className="glass-card p-3 flex items-center gap-3 relative overflow-hidden group">
+                            <div className="w-10 h-10 rounded-full bg-brand-accent/10 text-brand-accent flex flex-shrink-0 items-center justify-center font-black shadow-inner border border-brand-accent/5">
+                              {emp.code}
+                            </div>
+                            <div className="flex-grow min-w-0">
+                               <div className="flex items-center gap-1.5 flex-wrap">
+                                  <h4 className="font-bold text-sm text-brand-text truncate leading-tight">{emp.name[lang]}</h4>
+                                  <div className="flex gap-0.5">
+                                    {emp.spicy && <span className="text-[10px]">🌶️</span>}
+                                    {emp.vegetarian && <span className="text-[10px]">🥬</span>}
+                                  </div>
+                               </div>
+                               <p className="text-[10px] text-brand-text/50 truncate italic mt-0.5">{emp.description[lang]}</p>
+                               <div className="flex gap-1 mt-1 flex-wrap">
+                                  {emp.allergens.map(code => (
+                                    <span key={code} className="text-[7px] font-bold w-3 h-3 flex items-center justify-center rounded-full border border-brand-text/10 text-brand-text/40 bg-white/50">
+                                      {code}
+                                    </span>
+                                  ))}
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-2 bg-brand-accent/5 p-1 rounded-xl border border-brand-accent/10">
+                              <button 
+                                onClick={() => removeFlavor(emp.code)}
+                                className={cn(
+                                  "w-8 h-8 rounded-lg flex items-center justify-center transition-all",
+                                  customizingMenu.flavors[emp.code] ? "bg-white text-brand-primary shadow-sm active:scale-90" : "text-brand-text/10"
+                                )}
+                                disabled={!customizingMenu.flavors[emp.code]}
+                              >
+                                <Minus size={16} />
+                              </button>
+                              <span className={cn(
+                                "w-4 text-center font-black text-sm tabular-nums",
+                                customizingMenu.flavors[emp.code] ? "text-brand-primary" : "text-brand-text/10"
+                              )}>
+                                {customizingMenu.flavors[emp.code] || 0}
+                              </span>
+                              <button 
+                                onClick={() => addFlavor(emp.code)}
+                                className={cn(
+                                  "w-8 h-8 rounded-lg flex items-center justify-center shadow-sm active:scale-90 transition-all",
+                                  currentSelectionCount >= customizingMenu.menu.capacity ? "bg-brand-accent/20 text-brand-text/20" : "bg-brand-accent text-white"
+                                )}
+                                disabled={currentSelectionCount >= customizingMenu.menu.capacity}
+                              >
+                                <Plus size={16} />
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="bg-brand-accent/5 rounded-2xl p-4 border border-brand-accent/10">
+                      <div className="flex items-center gap-2 mb-3">
+                        <Sparkles size={14} className="text-brand-primary" />
+                        <span className="text-[10px] font-black uppercase tracking-wider text-brand-text/60">Legenda de Alergénicos</span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-y-2 gap-x-4">
+                        {ALLERGENS.map(a => (
+                          <div key={a.code} className="flex items-center gap-2">
+                            <span className="text-[9px] font-bold w-4 h-4 flex items-center justify-center rounded-full border border-brand-text/10 text-brand-text bg-white">
+                              {a.code}
+                            </span>
+                            <span className="text-[9px] text-brand-text/70">{a.name[lang]}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
                   </div>
                 )}
 
@@ -1399,17 +1671,62 @@ export default function App() {
                 </div>
               </div>
 
+              {/* Action Buttons */}
+              <div className="grid grid-cols-2 gap-3">
+                <button 
+                  onClick={handleInstagramShare}
+                  className="flex flex-col items-center justify-center gap-2 p-4 rounded-3xl bg-gradient-to-br from-purple-500 to-pink-500 text-white shadow-lg shadow-pink-500/20 active:scale-95 transition-all"
+                >
+                  <Instagram size={24} />
+                  <span className="text-[10px] font-black uppercase tracking-widest">{UI_TEXT.cart.instagramDM[lang!]}</span>
+                </button>
+                <button 
+                  onClick={handleSaveToNotes}
+                  className="flex flex-col items-center justify-center gap-2 p-4 rounded-3xl bg-brand-primary text-white shadow-lg shadow-brand-primary/20 active:scale-95 transition-all"
+                >
+                  <Smartphone size={24} />
+                  <span className="text-[10px] font-black uppercase tracking-widest">{UI_TEXT.cart.saveNotes[lang!]}</span>
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 gap-3">
+                 <button 
+                  onClick={handleShare}
+                  className="flex items-center justify-center gap-3 p-4 rounded-3xl bg-white border-2 border-brand-accent/10 text-brand-text font-black uppercase tracking-widest text-xs active:scale-95 transition-all shadow-sm"
+                >
+                  <Share2 size={18} className="text-brand-primary" />
+                  {UI_TEXT.cart.share[lang!]}
+                </button>
+              </div>
+
               <button 
                 onClick={() => setView('order')}
-                className="w-full p-4 rounded-2xl bg-brand-accent/10 text-brand-text font-bold flex items-center justify-center gap-2 active:scale-95 transition-all"
+                className="w-full p-4 rounded-2xl bg-brand-accent/5 text-brand-text/50 font-bold flex items-center justify-center gap-2 active:scale-95 transition-all"
               >
                 <ArrowLeft size={18} />
-                {UI_TEXT.backToLanguage[lang].split(' ')[0]} {/* Reuse back text */}
+                {UI_TEXT.backToLanguage[lang!].split(' ')[0]}
               </button>
             </motion.div>
           )}
         </AnimatePresence>
       </main>
+
+      {/* Copied Toast */}
+      <AnimatePresence>
+        {showCopiedToast && (
+          <motion.div
+            initial={{ opacity: 0, y: 50 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            className="fixed bottom-24 left-1/2 -translate-x-1/2 z-[100] w-[90%] max-w-xs"
+          >
+            <div className="bg-brand-text text-white px-4 py-3 rounded-2xl shadow-2xl flex items-center gap-3 border border-white/10 backdrop-blur-md">
+              <CheckCircle2 size={18} className="text-green-400" />
+              <p className="text-xs font-bold">{UI_TEXT.cart.copied[lang!]}</p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Integrated Bottom Navigation Bar */}
       {view !== 'language' && view !== 'ticket' && view !== 'customize-menu' && (

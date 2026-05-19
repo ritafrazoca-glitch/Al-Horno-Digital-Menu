@@ -7,6 +7,8 @@ export interface Empanada {
   popular?: boolean;
   spicy?: boolean;
   vegetarian?: boolean;
+  premium?: boolean;
+  allergens: string[];
   price: number;
 }
 
@@ -34,191 +36,228 @@ export interface MenuOption {
 }
 
 export const EMPANADAS: Empanada[] = [
+  // Classicas
   {
     code: 'T',
-    name: { pt: 'Ternera (Vitela)', en: 'Ternera (Veal)', es: 'Ternera (Ternera)' },
+    name: { pt: 'Vitela', en: 'Veal', es: 'Vitela' },
     description: {
       pt: 'Carne de vaca, cebola, pimento, ovo cozido e azeitona verde',
       en: 'Beef, onion, bell pepper, hard-boiled egg, and green olives',
       es: 'Carne de res, cebolla, pimiento, huevo cocido y aceituna verde'
     },
-    popular: true,
+    allergens: ['G', 'O'],
     price: 3.5
   },
   {
     code: 'TX',
-    name: { pt: 'Ternera Picante (Vitela Picante)', en: 'Ternera Picante (Spicy Veal)', es: 'Ternera Picante' },
+    name: { pt: 'Vitela Picante', en: 'Spicy Veal', es: 'Vitela Picante' },
     description: {
       pt: 'Carne de vaca, cebola, pimentos e pimentas variadas',
       en: 'Beef, onions, bell peppers, and assorted chili peppers',
       es: 'Carne de res, cebolla, pimientos y chiles variados'
     },
     spicy: true,
+    allergens: ['G'],
     price: 3.5
   },
   {
     code: 'P',
-    name: { pt: 'Pollo (Frango)', en: 'Pollo (Chicken)', es: 'Pollo' },
+    name: { pt: 'Frango', en: 'Chicken', es: 'Pollo' },
     description: {
       pt: 'Carne de frango, tomate, cebola e cebola japonesa',
       en: 'Chicken, tomatoes, onions, and japanese onions',
       es: 'Pollo, tomate, cebolla y cebolla japonesa'
     },
+    allergens: ['G'],
     price: 3.5
   },
   {
     code: 'PX',
-    name: { pt: 'Pollo Picante (Frango Picante)', en: 'Pollo Picante (Spicy Chicken)', es: 'Pollo Picante' },
+    name: { pt: 'Frango Picante', en: 'Spicy Chicken', es: 'Pollo Picante' },
     description: {
       pt: 'Carne de frango, cebola, aipo, lima kaffir e mistura de pimentas',
       en: 'Chicken, onion, celery, kaffir lime, and a blend of peppers',
       es: 'Pollo, cebolla, apio, lima kaffir y mezcla de pimientas'
     },
-    popular: true,
     spicy: true,
+    allergens: ['G', 'A'],
     price: 3.5
   },
   {
     code: 'CL',
-    name: { pt: 'Colares (Cachaço de Porco)', en: 'Colares (Pork)', es: 'Colares (Cerdo)' },
+    name: { pt: 'Colares (Cachaço de Porco)', en: 'Colares (Slow-cooked Pork)', es: 'Colares (Cerdo)' },
     description: {
       pt: 'Cachaço de porco a baixa temperatura com cerveja preta, cebola, natas, pimenta, mostarda e mel',
       en: 'Slow-cooked pork with dark beer, onions, cream, pepper, mustard, and honey',
       es: 'Cerdo a baja temperatura con cerveza negra, cebolla, nata, pimienta, mostaza y miel'
     },
+    allergens: ['G', 'M', 'L'],
     price: 3.5
   },
   {
     code: 'A',
-    name: { pt: 'Atún (Atum)', en: 'Atún (Tuna)', es: 'Atún' },
+    name: { pt: 'Atum', en: 'Tuna', es: 'Atún' },
     description: {
       pt: 'Atum, cebola, pimentos, ovo cozido, azeitonas verdes, tomate fresco e curgete',
       en: 'Tuna, onion, bell peppers, hard-boiled egg, green olives, fresh tomatoes, and zucchini',
       es: 'Atún, cebolla, pimientos, huevo cozido, aceitunas verdes, tomate fresco y calabacín'
     },
+    allergens: ['G', 'P', 'O'],
     price: 3.5
   },
   {
     code: 'CP',
-    name: { pt: 'Criollo y Provolone (Chouriço Criollo e Provolone)', en: 'Criollo y Provolone (Criollo Chorizo and Provolone)', es: 'Criollo y Provolone' },
+    name: { pt: 'Chouriço Criollo e Provolone', en: 'Criollo Chorizo and Provolone', es: 'Chorizo Criollo y Provolone' },
     description: {
       pt: 'Chouriço criollo, cebola laminada, queijo provolone, tomate seco e vinho branco',
       en: 'Criollo chorizo, sliced onions, provolone cheese, sun-dried tomatoes, and white wine',
       es: 'Chorizo criollo, cebolla laminada, queso provolone, tomate seco y vino blanco'
     },
+    allergens: ['G', 'L'],
     price: 3.5
   },
   {
     code: 'JQ',
-    name: { pt: 'Jamón y Queso (Fiambre e Queijo)', en: 'Jamón y Queso (Ham and Cheese)', es: 'Jamón y Queso' },
+    name: { pt: 'Mista', en: 'Ham and Cheese', es: 'Jamón y Queso' },
     description: {
       pt: 'Fiambre e mistura de queijos',
       en: 'Ham and assorted cheeses',
       es: 'Jamón y mezcla de quesos'
     },
-    price: 3.5
-  },
-  {
-    code: 'Q',
-    name: { pt: 'Queso (4 Queijos)', en: 'Queso (Four Cheese)', es: 'Queso (4 Quesos)' },
-    description: {
-      pt: 'Provolone picante, queijos variados e chimichurri',
-      en: 'Spicy provolone, assorted cheeses, and chimichurri',
-      es: 'Provolone picante, quesos variados y chimichurri'
-    },
-    popular: true,
-    spicy: true,
-    vegetarian: true,
-    price: 3.5
-  },
-  {
-    code: 'CQ',
-    name: { pt: 'Cebolla y Queso (Cebola e Queijo)', en: 'Cebolla y Queso (Onions and Cheese)', es: 'Cebolla y Queso' },
-    description: {
-      pt: 'Cebola na chapa e queijos variados',
-      en: 'Grilled onions and assorted cheeses',
-      es: 'Cebolla a la plancha y quesos variados'
-    },
-    vegetarian: true,
+    allergens: ['G', 'L'],
     price: 3.5
   },
   {
     code: 'ST',
-    name: { pt: 'Setas y Trufa (Cogumelos e Trufa)', en: 'Setas y Trufa (Mushrooms and Truffles)', es: 'Setas y Trufa' },
+    name: { pt: 'Cogumelos e Trufa', en: 'Mushrooms and Truffle', es: 'Setas y Trufa' },
     description: {
       pt: 'Cogumelos, tartufata (pasta de trufa), cebola, tomilho fresco e queijos variados',
       en: 'Mushrooms, tartufata (truffle paste), onion, fresh thyme, and assorted cheeses',
       es: 'Setas, tartufata (pasta de trufa), cebolla, tomillo fresco y quesos variados'
     },
-    popular: true,
     vegetarian: true,
-    price: 3.5
-  },
-  {
-    code: 'TA',
-    name: { pt: 'Tomate y Albahaca (Tomate e Manjericão)', en: 'Tomate y Albahaca (Tomatoes and Basil)', es: 'Tomate y Albahaca' },
-    description: {
-      pt: 'Tomate fresco, tomate seco, manjericão fresco e queijos variados',
-      en: 'Fresh tomatoes, sun-dried tomatoes, fresh basil, and assorted cheeses',
-      es: 'Tomate fresco, tomate seco, albahaca fresca y quesos variados'
-    },
-    vegetarian: true,
+    allergens: ['G', 'L', 'FC'],
     price: 3.5
   },
   {
     code: 'ER',
-    name: { pt: 'Espinaca y Ricotta (Espinafres, Noz e Ricotta)', en: 'Espinaca y Ricotta (Spinach, Walnuts and Ricotta)', es: 'Espinaca y Ricotta' },
+    name: { pt: 'Espinafres, Noz e Ricotta', en: 'Spinach, Walnuts and Ricotta', es: 'Espinacas, Nuez y Ricotta' },
     description: {
       pt: 'Espinafres, ricotta, cebola, nozes e queijos variados',
       en: 'Spinach, ricotta, onion, walnuts, and assorted cheeses',
       es: 'Espinacas, ricotta, cebolla, nueces y quesos variados'
     },
     vegetarian: true,
+    allergens: ['G', 'L', 'FC'],
     price: 3.5
+  },
+  
+  // Premium
+  {
+    code: 'MP',
+    name: { pt: 'Matambre', en: 'Matambre', es: 'Matambre' },
+    description: {
+      pt: 'Matambre (corte de vaca argentino), manjericão fresco, tomate natural e mistura de queijos',
+      en: 'Matambre (Argentine beef cut), fresh basil, natural tomato, and cheese mix',
+      es: 'Matambre (corte de res argentino), albahaca fresca, tomate natural y mezcla de quesos'
+    },
+    premium: true,
+    allergens: ['G', 'L'],
+    price: 3.7
+  },
+  {
+    code: 'CA',
+    name: { pt: 'Porco, Ananás e Lima', en: 'Pork, Pineapple and Lime', es: 'Cerdo, Piña y Lima' },
+    description: {
+      pt: 'Pá de porco, cebola roxa, pimentos, ananás caramelizado, coentros, sumo e raspa de lima',
+      en: 'Pork shoulder, red onion, bell peppers, caramelized pineapple, cilantro, lime juice and zest',
+      es: 'Paleta de cerdo, cebolla roja, pimientos, piña caramelizada, cilantro, zumo y ralladura de lima'
+    },
+    premium: true,
+    allergens: ['G'],
+    price: 3.7
+  },
+  {
+    code: 'CH',
+    name: { pt: 'Chouriço e Queijo', en: 'Chorizo and Cheese', es: 'Chorizo y Queso' },
+    description: {
+      pt: 'Chouriço, cebola caramelizada e mistura de queijos',
+      en: 'Chorizo, caramelized onions, and cheese mix',
+      es: 'Chorizo, cebolla caramelizada y mezcla de quesos'
+    },
+    premium: true,
+    allergens: ['G', 'L'],
+    price: 3.7
+  },
+  {
+    code: 'ON',
+    name: { pt: 'Osso Buco com Laranja', en: 'Osso Buco with Orange', es: 'Osso Buco con Naranja' },
+    description: {
+      pt: 'Ossobuco de vaca estufado com legumes, sumo e raspa de laranja, vinho tinto Malbec e mistura de malaguetas',
+      en: 'Beef ossobuco stewed with vegetables, orange juice and zest, Malbec red wine and chili mix',
+      es: 'Ossobuco de res estofado con verduras, zumo y ralladura de naranja, vino tinto Malbec y mezcla de chiles'
+    },
+    premium: true,
+    spicy: true,
+    allergens: ['G'],
+    price: 3.7
+  },
+  {
+    code: 'R',
+    name: { pt: 'Rabo de Boi', en: 'Oxtail', es: 'Rabo de Toro' },
+    description: {
+      pt: 'Rabo de boi, cenoura, cebola, vinho tinto Malbec e especiarias',
+      en: 'Oxtail, carrot, onion, Malbec red wine, and spices',
+      es: 'Rabo de toro, zanahoria, cebolla, vino tinto Malbec y especias'
+    },
+    premium: true,
+    allergens: ['G'],
+    price: 3.7
+  },
+  {
+    code: 'CS',
+    name: { pt: 'Queijo Cabra e Salva', en: 'Goat Cheese and Sage', es: 'Queso de Cabra y Salvia' },
+    description: {
+      pt: 'Queijo de cabra, pesto de salva e avelãs, mistura de queijos',
+      en: 'Goat cheese, sage and hazelnut pesto, cheese mix',
+      es: 'Queso de cabra, pesto de salvia y avellanas, mezcla de quesos'
+    },
+    premium: true,
+    vegetarian: true,
+    allergens: ['G', 'L', 'FC'],
+    price: 3.7
   }
 ];
 
 export const DRINKS: DrinkCategory[] = [
   {
-    title: { pt: 'Sumos', en: 'Soft Drinks', es: 'Refrescos' },
+    title: { pt: 'Águas e Sumos', en: 'Water and Juices', es: 'Aguas y Zumos' },
     items: [
-      { id: 'd1', name: { pt: 'Sumol', en: 'Sumol', es: 'Sumol' }, price: '2,5 €', numericPrice: 2.5 },
-      { id: 'd2', name: { pt: 'Iced Tea', en: 'Iced Tea', es: 'Iced Tea' }, price: '2,5 €', numericPrice: 2.5 },
-      { id: 'd3', name: { pt: 'Compal', en: 'Compal', es: 'Compal' }, price: '2,5 €', numericPrice: 2.5 },
-      { id: 'd4', name: { pt: '7Up', en: '7Up', es: '7Up' }, price: '2,5 €', numericPrice: 2.5 },
-      { id: 'd5', name: { pt: 'Pepsi', en: 'Pepsi', es: 'Pepsi' }, price: '2,5 €', numericPrice: 2.5 },
-      { id: 'd6', name: { pt: 'Pepsi 0', en: 'Pepsi 0', es: 'Pepsi 0' }, price: '2,5 €', numericPrice: 2.5 }
+      { id: 'd7', name: { pt: 'Água 0.33cl', en: 'Water 0.33cl', es: 'Agua 0.33cl' }, price: '2,00 €', numericPrice: 2 },
+      { id: 'd8', name: { pt: 'Frize 0.25cl', en: 'Frize 0.25cl', es: 'Frize 0.25cl' }, price: '2,50 €', numericPrice: 2.5 },
+      { id: 'd1', name: { pt: 'Sumol (Maracujá, Ananás, Laranja)', en: 'Sumol (Passion Fruit, Pineapple, Orange)', es: 'Sumol (Maracuyá, Piña, Naranja)' }, price: '2,50 €', numericPrice: 2.5 },
+      { id: 'd4', name: { pt: '7Up', en: '7Up', es: '7Up' }, price: '2,50 €', numericPrice: 2.5 },
+      { id: 'd2', name: { pt: 'Iced Tea (Pêssego, Limão, Manga)', en: 'Iced Tea (Peach, Lemon, Mango)', es: 'Iced Tea (Melocotón, Limón, Mango)' }, price: '2,50 €', numericPrice: 2.5 },
+      { id: 'd5', name: { pt: 'Pepsi', en: 'Pepsi', es: 'Pepsi' }, price: '2,50 €', numericPrice: 2.5 },
+      { id: 'd6', name: { pt: 'Pepsi 0', en: 'Pepsi 0', es: 'Pepsi 0' }, price: '2,50 €', numericPrice: 2.5 },
+      { id: 'd3', name: { pt: 'Compal (Pessêgo, Maçã, Pêra Rocha, Laranja, Manga)', en: 'Compal (Peach, Apple, Pear, Orange, Mango)', es: 'Compal (Melocotón, Manzana, Pera, Naranja, Mango)' }, price: '2,50 €', numericPrice: 2.5 }
     ]
   },
   {
-    title: { pt: 'Águas', en: 'Water', es: 'Aguas' },
+    title: { pt: 'Outras Bebidas', en: 'Other Drinks', es: 'Otras Bebidas' },
     items: [
-      { id: 'd7', name: { pt: 'Serra da Estrela 0.5', en: 'Serra da Estrela 0.5', es: 'Serra da Estrela 0.5' }, price: '2 €', numericPrice: 2 },
-      { id: 'd8', name: { pt: 'Frize', en: 'Frize', es: 'Frize' }, price: '2,3 €', numericPrice: 2.3 },
-      { id: 'd17', name: { pt: 'Água das Pedras 0.75', en: 'Pedras Water 0.75', es: 'Agua Pedras 0.75' }, price: '4,5 €', numericPrice: 4.5, premium: true }
+      { id: 'd18', name: { pt: 'Heineken 0.25cl', en: 'Heineken 0.25cl', es: 'Heineken 0.25cl' }, price: '2,20 €', numericPrice: 2.2 },
+      { id: 'd10', name: { pt: 'Estrella Damm 0.25cl', en: 'Estrella Damm 0.25cl', es: 'Estrella Damm 0.25cl' }, price: '2,00 €', numericPrice: 2 },
+      { id: 'd11', name: { pt: 'Estrella Damm 0.33cl', en: 'Estrella Damm 0.33cl', es: 'Estrella Damm 0.33cl' }, price: '3,00 €', numericPrice: 3, premium: true },
+      { id: 'd12', name: { pt: 'Free Damm', en: 'Free Damm', es: 'Free Damm' }, price: '2,80 €', numericPrice: 2.8, premium: true },
+      { id: 'd19', name: { pt: 'Somersby 0.33cl', en: 'Somersby 0.33cl', es: 'Somersby 0.33cl' }, price: '3,20 €', numericPrice: 3.2, premium: true },
+      { id: 'd9', name: { pt: 'Corona', en: 'Corona', es: 'Corona' }, price: '3,50 €', numericPrice: 3.5, premium: true }
     ]
   },
   {
-    title: { pt: 'Cervejas', en: 'Beers', es: 'Cervezas' },
+    title: { pt: 'Extras', en: 'Extras', es: 'Extras' },
     items: [
-      { id: 'd9', name: { pt: 'Corona', en: 'Corona', es: 'Corona' }, price: '3,5 €', numericPrice: 3.5, premium: true },
-      { id: 'd10', name: { pt: 'Estrella Damm 0.25', en: 'Estrella Damm 0.25', es: 'Estrella Damm 0.25' }, price: '2 €', numericPrice: 2 },
-      { id: 'd11', name: { pt: 'Estrella Damm 0.33', en: 'Estrella Damm 0.33', es: 'Estrella Damm 0.33' }, price: '3 €', numericPrice: 3, premium: true },
-      { id: 'd12', name: { pt: 'Damm Free 0.25', en: 'Damm Free 0.25', es: 'Damm Free 0.25' }, price: '2,1 €', numericPrice: 2.1 }
-    ]
-  },
-  {
-    title: { pt: 'Cafetaria', en: 'Café', es: 'Cafetería' },
-    items: [
-      { id: 'd13', name: { pt: 'Café Expresso', en: 'Espresso', es: 'Café Expreso' }, price: '1 €', numericPrice: 1 },
-      { id: 'd14', name: { pt: 'Abatanado', en: 'Black Coffee', es: 'Café Largo' }, price: '1,5 €', numericPrice: 1.5 },
-      { id: 'd15', name: { pt: 'Meia de Leite', en: 'Latte', es: 'Café con Leche' }, price: '1,6 €', numericPrice: 1.6 }
-    ]
-  },
-  {
-    title: { pt: 'Vinho', en: 'Wine', es: 'Vino' },
-    items: [
-      { id: 'd16', name: { pt: 'Vinho a Copo', en: 'Glass of Wine', es: 'Copa de Vino' }, price: '4 €', numericPrice: 4, premium: true }
+      { id: 'ext1', name: { pt: 'Molho Chimichurri', en: 'Chimichurri Sauce', es: 'Salsa Chimichurri' }, price: '1,00 €', numericPrice: 1 }
     ]
   }
 ];
@@ -274,11 +313,23 @@ export const TASTING_MENUS: MenuOption[] = [
   }
 ];
 
+export const ALLERGENS: { code: string; name: { [key in Language]: string } }[] = [
+  { code: 'G', name: { pt: 'Glúten', en: 'Gluten', es: 'Gluten' } },
+  { code: 'L', name: { pt: 'Leite', en: 'Milk', es: 'Leche' } },
+  { code: 'O', name: { pt: 'Ovo', en: 'Egg', es: 'Huevo' } },
+  { code: 'P', name: { pt: 'Peixe', en: 'Fish', es: 'Pescado' } },
+  { code: 'FC', name: { pt: 'Frutos de casca rija', en: 'Nuts', es: 'Frutos de cáscara' } },
+  { code: 'M', name: { pt: 'Mostarda', en: 'Mustard', es: 'Mostaza' } },
+  { code: 'A', name: { pt: 'Aipo', en: 'Celery', es: 'Apio' } }
+];
+
 export const UI_TEXT = {
   chooseLanguage: { pt: 'Escolher idioma', en: 'Choose language', es: 'Elegir idioma' },
   tagline: { pt: 'Empanadas feitas no forno a lenha', en: 'Empanadas made in a wood-fired oven', es: 'Empanadas hechas en horno de leña' },
   sections: {
     empanadas: { pt: 'Empanadas', en: 'Empanadas', es: 'Empanadas' },
+    classicas: { pt: 'Clássicas', en: 'Classics', es: 'Clásicas' },
+    premium: { pt: 'Premium', en: 'Premium', es: 'Premium' },
     drinks: { pt: 'Bebidas', en: 'Drinks', es: 'Bebidas' },
     menus: { pt: 'Menus', en: 'Menus', es: 'Menús' },
     history: { pt: 'A nossa história', en: 'Our history', es: 'Nuestra historia' },
@@ -294,7 +345,11 @@ export const UI_TEXT = {
     showAtCounter: { pt: 'Mostrar pedido no balcão', en: 'Show order at counter', es: 'Mostrar pedido en el mostrador' },
     ticketMessage: { pt: 'Mostre este pedido no balcão para pagamento', en: 'Show this order at the counter for payment', es: 'Muestre este pedido en el mostrador para el pago' },
     clear: { pt: 'Limpar', en: 'Clear', es: 'Limpiar' },
-    editSelection: { pt: 'Editar sabores', en: 'Edit flavors', es: 'Editar sabores' }
+    editSelection: { pt: 'Editar sabores', en: 'Edit flavors', es: 'Editar sabores' },
+    share: { pt: 'Partilhar pedido', en: 'Share order', es: 'Compartir pedido' },
+    saveNotes: { pt: 'Guardar nas notas', en: 'Save to notes', es: 'Guardar en notas' },
+    instagramDM: { pt: 'Enviar p/ Instagram', en: 'Send to Instagram', es: 'Enviar a Instagram' },
+    copied: { pt: 'Copiado para a área de transferência!', en: 'Copied to clipboard!', es: '¡Copiado al portapapeles!' }
   },
   customization: {
     choose: { pt: 'Escolhe {count} empanadas', en: 'Choose {count} empanadas', es: 'Elige {count} empanadas' },
@@ -324,9 +379,9 @@ export const UI_TEXT = {
   backToLanguage: { pt: 'Voltar ao idioma', en: 'Back to language', es: 'Volver al idioma' },
   mostPopular: { pt: 'Mais Pedida', en: 'Most Popular', es: 'Más Pedida' },
   menuNote: {
-    pt: 'A cerveja Corona, a Estrella 0,33, o vinho, e a agua com gás 0,75 não estão incluidas no menu, pelo que acresce o valor da diferença',
-    en: 'Corona beer, Estrella (0.33 L), wine, and sparkling water (0.75 L) are not included in the menu, so the difference in price will be added',
-    es: 'La cerveza Corona, la Estrella 0,33, el vino y el agua con gas 0,75 no están incluidos en el menú, por lo que se añadirá la diferencia de precio'
+    pt: 'A cerveja Corona, a Estrella 0,33, a Free Damm e a Somersby não estão incluidas no menu, pelo que acresce o valor da diferença',
+    en: 'Corona beer, Estrella (0.33 L), Free Damm, and Somersby are not included in the menu, so the difference in price will be added',
+    es: 'La cerveza Corona, la Estrella 0,33, la Free Damm y la Somersby no están incluidos en el menú, por lo que se añadirá la diferencia de precio'
   },
   tastingMenus: { pt: 'Menus de Degustação', en: 'Tasting Menus', es: 'Menús de Degustación' },
   location: { pt: 'Onde estamos', en: 'Where we are', es: 'Dónde estamos' },
