@@ -36,7 +36,7 @@ export interface MenuOption {
 }
 
 export const EMPANADAS: Empanada[] = [
-  // Classicas
+  // Classicas - Price: 3.50€
   {
     code: 'T',
     name: { pt: 'Vitela', en: 'Veal', es: 'Vitela' },
@@ -95,14 +95,14 @@ export const EMPANADAS: Empanada[] = [
     price: 3.5
   },
   {
-    code: 'A',
-    name: { pt: 'Atum', en: 'Tuna', es: 'Atún' },
+    code: 'CA',
+    name: { pt: 'Porco, Ananás e Lima', en: 'Pork, Pineapple and Lime', es: 'Cerdo, Piña y Lima' },
     description: {
-      pt: 'Atum, cebola, pimentos, ovo cozido, azeitonas verdes, tomate fresco e curgete',
-      en: 'Tuna, onion, bell peppers, hard-boiled egg, green olives, fresh tomatoes, and zucchini',
-      es: 'Atún, cebolla, pimientos, huevo cozido, aceitunas verdes, tomate fresco y calabacín'
+      pt: 'Pá de porco, cebola roxa, pimentos, ananás caramelizado, coentros, sumo e raspa de lima',
+      en: 'Pork shoulder, red onion, bell peppers, caramelized pineapple, cilantro, lime juice and zest',
+      es: 'Paleta de cerdo, cebolla roja, pimientos, piña caramelizada, cilantro, zumo y ralladura de lima'
     },
-    allergens: ['G', 'P', 'O'],
+    allergens: ['G'],
     price: 3.5
   },
   {
@@ -117,26 +117,14 @@ export const EMPANADAS: Empanada[] = [
     price: 3.5
   },
   {
-    code: 'JQ',
-    name: { pt: 'Mista', en: 'Ham and Cheese', es: 'Jamón y Queso' },
+    code: 'A',
+    name: { pt: 'Atum', en: 'Tuna', es: 'Atún' },
     description: {
-      pt: 'Fiambre e mistura de queijos',
-      en: 'Ham and assorted cheeses',
-      es: 'Jamón y mezcla de quesos'
+      pt: 'Atum, cebola, pimentos, ovo cozido, azeitonas verdes, tomate fresco e curgete',
+      en: 'Tuna, onion, bell peppers, hard-boiled egg, green olives, fresh tomatoes, and zucchini',
+      es: 'Atún, cebolla, pimientos, huevo cozido, aceitunas verdes, tomate fresco y calabacín'
     },
-    allergens: ['G', 'L'],
-    price: 3.5
-  },
-  {
-    code: 'ST',
-    name: { pt: 'Cogumelos e Trufa', en: 'Mushrooms and Truffle', es: 'Setas y Trufa' },
-    description: {
-      pt: 'Cogumelos, tartufata (pasta de trufa), cebola, tomilho fresco e queijos variados',
-      en: 'Mushrooms, tartufata (truffle paste), onion, fresh thyme, and assorted cheeses',
-      es: 'Setas, tartufata (pasta de trufa), cebolla, tomillo fresco y quesos variados'
-    },
-    vegetarian: true,
-    allergens: ['G', 'L', 'FC'],
+    allergens: ['G', 'P', 'O'],
     price: 3.5
   },
   {
@@ -151,8 +139,20 @@ export const EMPANADAS: Empanada[] = [
     allergens: ['G', 'L', 'FC'],
     price: 3.5
   },
+  {
+    code: 'CQ',
+    name: { pt: 'Cebola e Queijo', en: 'Onion and Cheese', es: 'Cebolla y Queso' },
+    description: {
+      pt: 'Cebola na chapa e queijos variados',
+      en: 'Grilled onions and assorted cheeses',
+      es: 'Cebolla a la plancha y quesos variados'
+    },
+    vegetarian: true,
+    allergens: ['G'],
+    price: 3.5
+  },
   
-  // Premium
+  // Premium - Price: 4.00€
   {
     code: 'MP',
     name: { pt: 'Matambre', en: 'Matambre', es: 'Matambre' },
@@ -163,31 +163,7 @@ export const EMPANADAS: Empanada[] = [
     },
     premium: true,
     allergens: ['G', 'L'],
-    price: 3.7
-  },
-  {
-    code: 'CA',
-    name: { pt: 'Porco, Ananás e Lima', en: 'Pork, Pineapple and Lime', es: 'Cerdo, Piña y Lima' },
-    description: {
-      pt: 'Pá de porco, cebola roxa, pimentos, ananás caramelizado, coentros, sumo e raspa de lima',
-      en: 'Pork shoulder, red onion, bell peppers, caramelized pineapple, cilantro, lime juice and zest',
-      es: 'Paleta de cerdo, cebolla roja, pimientos, piña caramelizada, cilantro, zumo y ralladura de lima'
-    },
-    premium: true,
-    allergens: ['G'],
-    price: 3.7
-  },
-  {
-    code: 'CH',
-    name: { pt: 'Chouriço e Queijo', en: 'Chorizo and Cheese', es: 'Chorizo y Queso' },
-    description: {
-      pt: 'Chouriço, cebola caramelizada e mistura de queijos',
-      en: 'Chorizo, caramelized onions, and cheese mix',
-      es: 'Chorizo, cebolla caramelizada y mezcla de quesos'
-    },
-    premium: true,
-    allergens: ['G', 'L'],
-    price: 3.7
+    price: 4.0
   },
   {
     code: 'ON',
@@ -200,7 +176,7 @@ export const EMPANADAS: Empanada[] = [
     premium: true,
     spicy: true,
     allergens: ['G'],
-    price: 3.7
+    price: 4.0
   },
   {
     code: 'R',
@@ -212,7 +188,31 @@ export const EMPANADAS: Empanada[] = [
     },
     premium: true,
     allergens: ['G'],
-    price: 3.7
+    price: 4.0
+  },
+  {
+    code: 'JQ',
+    name: { pt: 'Mista', en: 'Ham and Cheese', es: 'Jamón y Queso' },
+    description: {
+      pt: 'Fiambre e mistura de queijos',
+      en: 'Ham and assorted cheeses',
+      es: 'Jamón y mezcla de quesos'
+    },
+    premium: true,
+    allergens: ['G', 'L'],
+    price: 4.0
+  },
+  {
+    code: 'CH',
+    name: { pt: 'Chouriço e Queijo', en: 'Chorizo and Cheese', es: 'Chorizo y Queso' },
+    description: {
+      pt: 'Chouriço, cebola caramelizada e mistura de queijos',
+      en: 'Chorizo, caramelized onions, and cheese mix',
+      es: 'Chorizo, cebolla caramelizada y mezcla de quesos'
+    },
+    premium: true,
+    allergens: ['G', 'L'],
+    price: 4.0
   },
   {
     code: 'CS',
@@ -224,8 +224,48 @@ export const EMPANADAS: Empanada[] = [
     },
     premium: true,
     vegetarian: true,
-    allergens: ['G', 'L', 'FC'],
-    price: 3.7
+    allergens: ['L', 'FC'],
+    price: 4.0
+  },
+  {
+    code: 'Q',
+    name: { pt: '4 Queijos', en: '4 Cheeses', es: '4 Quesos' },
+    description: {
+      pt: 'Provolone picante, queijos variados e chimichurri',
+      en: 'Spicy provolone, assorted cheeses, and chimichurri',
+      es: 'Provolone picante, quesos variados y chimichurri'
+    },
+    premium: true,
+    spicy: true,
+    vegetarian: true,
+    allergens: ['G'],
+    price: 4.0
+  },
+  {
+    code: 'ST',
+    name: { pt: 'Cogumelos e Trufa', en: 'Mushrooms and Truffle', es: 'Setas y Trufa' },
+    description: {
+      pt: 'Cogumelos, tartufata (pasta de trufa), cebola, tomilho fresco e queijos variados',
+      en: 'Mushrooms, tartufata (truffle paste), onion, fresh thyme, and assorted cheeses',
+      es: 'Setas, tartufata (pasta de trufa), cebolla, tomillo fresco y quesos variados'
+    },
+    premium: true,
+    vegetarian: true,
+    allergens: ['L', 'FC'],
+    price: 4.0
+  },
+  {
+    code: 'TA',
+    name: { pt: 'Tomate e Manjericão', en: 'Tomato and Basil', es: 'Tomate y Albahaca' },
+    description: {
+      pt: 'Tomate fresco, tomate seco, manjericão fresco e queijos variados',
+      en: 'Fresh tomatoes, sun-dried tomatoes, fresh basil, and assorted cheeses',
+      es: 'Tomate fresco, tomate seco, albahaca fresca y quesos variados'
+    },
+    premium: true,
+    vegetarian: true,
+    allergens: ['G'],
+    price: 4.0
   }
 ];
 
@@ -240,16 +280,16 @@ export const DRINKS: DrinkCategory[] = [
       { id: 'd2', name: { pt: 'Iced Tea (Pêssego, Limão, Manga)', en: 'Iced Tea (Peach, Lemon, Mango)', es: 'Iced Tea (Melocotón, Limón, Mango)' }, price: '2,50 €', numericPrice: 2.5 },
       { id: 'd5', name: { pt: 'Pepsi', en: 'Pepsi', es: 'Pepsi' }, price: '2,50 €', numericPrice: 2.5 },
       { id: 'd6', name: { pt: 'Pepsi 0', en: 'Pepsi 0', es: 'Pepsi 0' }, price: '2,50 €', numericPrice: 2.5 },
-      { id: 'd3', name: { pt: 'Compal (Pessêgo, Maçã, Pêra Rocha, Laranja, Manga)', en: 'Compal (Peach, Apple, Pear, Orange, Mango)', es: 'Compal (Melocotón, Manzana, Pera, Naranja, Mango)' }, price: '2,50 €', numericPrice: 2.5 }
+      { id: 'd3', name: { pt: 'Compal (Pessêgo, Maçã, Pêra Rocha, Laranja do Algarve, Manga)', en: 'Compal (Peach, Apple, Pear, Algarve Orange, Mango)', es: 'Compal (Melocotón, Manzana, Pera, Naranja de Algarve, Mango)' }, price: '2,50 €', numericPrice: 2.5 }
     ]
   },
   {
     title: { pt: 'Outras Bebidas', en: 'Other Drinks', es: 'Otras Bebidas' },
     items: [
       { id: 'd18', name: { pt: 'Heineken 0.25cl', en: 'Heineken 0.25cl', es: 'Heineken 0.25cl' }, price: '2,20 €', numericPrice: 2.2 },
-      { id: 'd10', name: { pt: 'Estrella Damm 0.25cl', en: 'Estrella Damm 0.25cl', es: 'Estrella Damm 0.25cl' }, price: '2,00 €', numericPrice: 2 },
+      { id: 'd10', name: { pt: 'Estrella Damm 0.25cl', en: 'Estrella Damm 0.25cl', es: 'Estrella Damm 0.25cl' }, price: '2,20 €', numericPrice: 2.2 },
       { id: 'd11', name: { pt: 'Estrella Damm 0.33cl', en: 'Estrella Damm 0.33cl', es: 'Estrella Damm 0.33cl' }, price: '3,00 €', numericPrice: 3, premium: true },
-      { id: 'd12', name: { pt: 'Free Damm', en: 'Free Damm', es: 'Free Damm' }, price: '2,80 €', numericPrice: 2.8, premium: true },
+      { id: 'd12', name: { pt: 'Free Damm', en: 'Free Damm', es: 'Free Damm' }, price: '3,00 €', numericPrice: 3, premium: true },
       { id: 'd19', name: { pt: 'Somersby 0.33cl', en: 'Somersby 0.33cl', es: 'Somersby 0.33cl' }, price: '3,20 €', numericPrice: 3.2, premium: true },
       { id: 'd9', name: { pt: 'Corona', en: 'Corona', es: 'Corona' }, price: '3,50 €', numericPrice: 3.5, premium: true }
     ]
@@ -257,7 +297,8 @@ export const DRINKS: DrinkCategory[] = [
   {
     title: { pt: 'Extras', en: 'Extras', es: 'Extras' },
     items: [
-      { id: 'ext1', name: { pt: 'Molho Chimichurri', en: 'Chimichurri Sauce', es: 'Salsa Chimichurri' }, price: '1,00 €', numericPrice: 1 }
+      { id: 'ext1', name: { pt: 'Molho Chimichurri', en: 'Chimichurri Sauce', es: 'Salsa Chimichurri' }, price: '1,00 €', numericPrice: 1 },
+      { id: 'ext2', name: { pt: 'Caldo Verde', en: 'Caldo Verde Soup', es: 'Caldo Verde' }, price: '4,00 €', numericPrice: 4 }
     ]
   }
 ];
@@ -266,17 +307,26 @@ export const MENUS: MenuOption[] = [
   {
     id: 'm3',
     title: { pt: 'Menu 3 Empanadas', en: 'Menu 3 Empanadas', es: 'Menú 3 Empanadas' },
-    price: '12,7 €',
+    price: '12,70 €',
     numericPrice: 12.7,
     details: { pt: '3 Empanadas + 1 Bebida', en: '3 Empanadas + 1 Drink', es: '3 Empanadas + 1 Bebida' },
     capacity: 3,
     drinkCapacity: 1
   },
   {
+    id: 'm_caldoverde',
+    title: { pt: 'Menu Caldo Verde', en: 'Caldo Verde Menu', es: 'Menú Caldo Verde' },
+    price: '13,00 €',
+    numericPrice: 13.0,
+    details: { pt: '1 Caldo Verde + 2 Empanadas + 1 Bebida', en: '1 Caldo Verde + 2 Empanadas + 1 Drink', es: '1 Caldo Verde + 2 Empanadas + 1 Bebida' },
+    capacity: 2,
+    drinkCapacity: 1
+  },
+  {
     id: 'm6',
     title: { pt: 'Menu 6 Empanadas', en: 'Menu 6 Empanadas', es: 'Menú 6 Empanadas' },
-    price: '25,4 €',
-    numericPrice: 25.4,
+    price: '25,00 €',
+    numericPrice: 25.0,
     details: { pt: '6 Empanadas + 2 Bebidas', en: '6 Empanadas + 2 Drinks', es: '6 Empanadas + 2 Bebidas' },
     capacity: 6,
     drinkCapacity: 2
@@ -284,32 +334,11 @@ export const MENUS: MenuOption[] = [
   {
     id: 'm12',
     title: { pt: 'Menu 12 Empanadas', en: 'Menu 12 Empanadas', es: 'Menú 12 Empanadas' },
-    price: '46,4 €',
-    numericPrice: 46.4,
+    price: '49,00 €',
+    numericPrice: 49.0,
     details: { pt: '12 Empanadas + 4 Bebidas', en: '12 Empanadas + 4 Drinks', es: '12 Empanadas + 4 Bebidas' },
     capacity: 12,
     drinkCapacity: 4
-  }
-];
-
-export const TASTING_MENUS: MenuOption[] = [
-  {
-    id: 't6',
-    title: { pt: 'Degustação 6', en: 'Tasting 6', es: 'Degustación 6' },
-    price: '21 €',
-    numericPrice: 21,
-    details: { pt: '6 Empanadas', en: '6 Empanadas', es: '6 Empanadas' },
-    capacity: 6,
-    drinkCapacity: 0
-  },
-  {
-    id: 't12',
-    title: { pt: 'Degustação 12', en: 'Tasting 12', es: 'Degustación 12' },
-    price: '41 €',
-    numericPrice: 41,
-    details: { pt: '12 Empanadas', en: '12 Empanadas', es: '12 Empanadas' },
-    capacity: 12,
-    drinkCapacity: 0
   }
 ];
 

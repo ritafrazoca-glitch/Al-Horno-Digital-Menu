@@ -1,0 +1,18 @@
+{
+  "entities": {
+    "subscribers": {
+      "title": "Subscribers",
+      "description": "Leads collected from 10% discount pop-up form",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "email": { "type": "string" },
+        "phone": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "code": { "type": "string" }
+      },
+      "required": ["name", "email", "createdAt", "code"]
+    }
+  }
+}

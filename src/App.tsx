@@ -31,14 +31,23 @@ import {
   Share2,
   Copy,
   Smartphone,
-  CheckCircle2
+  CheckCircle2,
+  Gift,
+  Mail,
+  User,
+  Phone,
+  Download,
+  Check,
+  Key,
+  Percent
 } from 'lucide-react';
+import { db } from './lib/firebase';
+import { collection, addDoc, onSnapshot, query, orderBy } from 'firebase/firestore';
 import { 
   Language, 
   EMPANADAS, 
   DRINKS, 
   MENUS, 
-  TASTING_MENUS, 
   UI_TEXT,
   ALLERGENS,
   Empanada,
@@ -68,12 +77,97 @@ interface CustomizingMenu {
   cartId?: string;
 }
 
+interface SubscriberLead {
+  id: string;
+  name: string;
+  email: string;
+  phone?: string;
+  createdAt: string;
+  code: string;
+}
+
 export default function App() {
   const [lang, setLang] = useState<Language | null>(null);
   const [view, setView] = useState<View>('language');
   const [cart, setCart] = useState<Record<string, CartItem>>({});
   const [customizingMenu, setCustomizingMenu] = useState<CustomizingMenu | null>(null);
   const [showCopiedToast, setShowCopiedToast] = useState(false);
+
+  // Subscribers and Discount Pop-up State
+  const [showDiscountModal, setShowDiscountModal] = useState(false);
+  const [discountClaimedCode, setDiscountClaimedCode] = useState<string | null>(null);
+  const [isDiscountApplied, setIsDiscountApplied] = useState(false);
+  const [discountInputCode, setDiscountInputCode] = useState('');
+  const [promoError, setPromoError] = useState('');
+  const [promoSuccess, setPromoSuccess] = useState('');
+  
+  const [discountForm, setDiscountForm] = useState({ name: '', email: '', phone: '' });
+  const [formError, setFormError] = useState('');
+  const [subscribers, setSubscribers] = useState<SubscriberLead[]>([]);
+  const [showAdminModal, setShowAdminModal] = useState(false);
+
+  // Sync subscribers and discount state with localStorage and Firebase Firestore
+  useEffect(() => {
+    const savedSubscribers = localStorage.getItem('alhorno_subscribers');
+    if (savedSubscribers) {
+      try {
+        setSubscribers(JSON.parse(savedSubscribers));
+      } catch (e) {
+        console.error("Error loading subscribers", e);
+      }
+    }
+
+    const savedClaimedCode = localStorage.getItem('alhorno_claimed_code');
+    if (savedClaimedCode) {
+      setDiscountClaimedCode(savedClaimedCode);
+    }
+
+    const savedAppliedDiscount = localStorage.getItem('alhorno_applied_discount');
+    if (savedAppliedDiscount === 'true') {
+      setIsDiscountApplied(true);
+    }
+
+    // Real-time listener for subscribers in Firebase Firestore
+    try {
+      const q = query(collection(db, 'subscribers'), orderBy('createdAt', 'desc'));
+      const unsubscribe = onSnapshot(q, (snapshot) => {
+        const firestoreSubscribers: SubscriberLead[] = snapshot.docs.map(doc => ({
+          id: doc.id,
+          name: doc.data().name || '',
+          email: doc.data().email || '',
+          phone: doc.data().phone || undefined,
+          createdAt: doc.data().createdAt || new Date().toISOString(),
+          code: doc.data().code || 'ALHORNO10'
+        }));
+        setSubscribers(firestoreSubscribers);
+        localStorage.setItem('alhorno_subscribers', JSON.stringify(firestoreSubscribers));
+      }, (err) => {
+        console.warn('Firestore subscription using local cache:', err);
+      });
+      return () => unsubscribe();
+    } catch (err) {
+      console.error('Error connecting to Firestore subscribers:', err);
+    }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem('alhorno_applied_discount', isDiscountApplied ? 'true' : 'false');
+  }, [isDiscountApplied]);
+
+  const saveSubscribers = (newSubscribers: SubscriberLead[]) => {
+    setSubscribers(newSubscribers);
+    localStorage.setItem('alhorno_subscribers', JSON.stringify(newSubscribers));
+  };
+
+  const triggerDiscountPopupIfNeeded = () => {
+    const dismissed = localStorage.getItem('alhorno_popup_dismissed');
+    const claimed = localStorage.getItem('alhorno_claimed_code');
+    if (!dismissed && !claimed) {
+      setTimeout(() => {
+        setShowDiscountModal(true);
+      }, 700);
+    }
+  };
 
   // Sync with localStorage
   useEffect(() => {
@@ -96,6 +190,98 @@ export default function App() {
     setLang(l);
     setView('home');
     window.scrollTo(0, 0);
+    triggerDiscountPopupIfNeeded();
+  };
+
+  const handleDismissPopup = () => {
+    setShowDiscountModal(false);
+    localStorage.setItem('alhorno_popup_dismissed', 'true');
+  };
+
+  const handleClaimDiscount = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!discountForm.name.trim()) {
+      setFormError('Por favor, preenche o teu nome.');
+      return;
+    }
+    if (!discountForm.email.trim() || !discountForm.email.includes('@')) {
+      setFormError('Por favor, insere um e-mail válido.');
+      return;
+    }
+
+    setFormError('');
+    const code = 'ALHORNO10';
+    const createdAtIso = new Date().toISOString();
+    const leadData = {
+      name: discountForm.name.trim(),
+      email: discountForm.email.trim(),
+      phone: discountForm.phone.trim() || '',
+      createdAt: createdAtIso,
+      code
+    };
+
+    // 1. Save directly to Firebase Firestore
+    try {
+      const docRef = await addDoc(collection(db, 'subscribers'), leadData);
+      const newLead: SubscriberLead = {
+        id: docRef.id,
+        ...leadData,
+        phone: leadData.phone || undefined
+      };
+      saveSubscribers([newLead, ...subscribers.filter(s => s.id !== docRef.id)]);
+    } catch (err) {
+      console.error('Error adding document to Firestore:', err);
+      // Fallback local save if offline
+      const newLead: SubscriberLead = {
+        id: `lead_${Date.now()}`,
+        ...leadData,
+        phone: leadData.phone || undefined
+      };
+      saveSubscribers([newLead, ...subscribers]);
+    }
+
+    setDiscountClaimedCode(code);
+    localStorage.setItem('alhorno_claimed_code', code);
+    setIsDiscountApplied(true);
+  };
+
+  const handleApplyPromoCode = () => {
+    if (discountInputCode.trim().toUpperCase() === 'ALHORNO10') {
+      setIsDiscountApplied(true);
+      setPromoSuccess('Código de 10% de desconto aplicado com sucesso!');
+      setPromoError('');
+    } else {
+      setPromoError('Código inválido. Usa ALHORNO10 para 10% de desconto.');
+      setPromoSuccess('');
+    }
+  };
+
+  const handleExportCSV = () => {
+    if (subscribers.length === 0) {
+      alert('Ainda não existem subscritores registados.');
+      return;
+    }
+
+    const headers = ['ID', 'Nome', 'Email', 'Telefone', 'Data/Hora', 'Codigo'];
+    const rows = subscribers.map(s => [
+      s.id,
+      `"${s.name.replace(/"/g, '""')}"`,
+      `"${s.email.replace(/"/g, '""')}"`,
+      `"${(s.phone || '').replace(/"/g, '""')}"`,
+      `"${new Date(s.createdAt).toLocaleString('pt-PT')}"`,
+      s.code
+    ]);
+
+    const csvContent = 'data:text/csv;charset=utf-8,\uFEFF' 
+      + [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `alhorno_subscritores_10desconto_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   const getOrderSummaryText = () => {
@@ -103,6 +289,9 @@ export default function App() {
     Object.values(cart).forEach((item: any) => {
       text += `${item.quantity}x ${item.name[lang!]} - ${(item.price * item.quantity).toFixed(2)} €\n`;
       if (item.flavors) {
+        if (item.id.startsWith('m_caldoverde')) {
+          text += `  └ 1x Caldo Verde\n`;
+        }
         Object.entries(item.flavors).forEach(([code, count]) => {
           const emp = EMPANADAS.find(e => e.code === code);
           text += `  └ ${count}x ${emp?.name[lang!]} (${code})\n`;
@@ -115,6 +304,9 @@ export default function App() {
         }
       }
     });
+    if (isDiscountApplied) {
+      text += `\n🏷️ *Desconto Aplicado (10%): -${discountAmount.toFixed(2)} €* (ALHORNO10)`;
+    }
     text += `\n💰 *Total: ${cartTotal.toFixed(2)} €*`;
     return text;
   };
@@ -462,9 +654,18 @@ export default function App() {
     return menu.numericPrice + extraCost;
   }, [customizingMenu]);
 
-  const cartTotal = useMemo(() => {
+  const rawCartTotal = useMemo(() => {
     return (Object.values(cart) as CartItem[]).reduce((acc, item) => acc + (item.price * item.quantity), 0);
   }, [cart]);
+
+  const discountAmount = useMemo(() => {
+    if (!isDiscountApplied) return 0;
+    return rawCartTotal * 0.10;
+  }, [rawCartTotal, isDiscountApplied]);
+
+  const cartTotal = useMemo(() => {
+    return Math.max(0, rawCartTotal - discountAmount);
+  }, [rawCartTotal, discountAmount]);
 
   const totalItems = useMemo(() => {
     return (Object.values(cart) as CartItem[]).reduce((acc, item) => acc + item.quantity, 0);
@@ -568,12 +769,24 @@ export default function App() {
           <h2 className="font-bold text-brand-primary tracking-tight text-base uppercase">Al'Horno</h2>
         </div>
 
-        <button 
-          onClick={() => setView('language')}
-          className="p-2 rounded-full hover:bg-brand-accent/10 transition-colors text-brand-primary"
-        >
-          <Globe size={20} strokeWidth={1.5} />
-        </button>
+        <div className="flex items-center gap-1">
+          <button 
+            onClick={() => setShowAdminModal(true)}
+            className="p-2 rounded-full hover:bg-brand-accent/10 transition-colors text-brand-primary relative"
+            title="Gestor de Leads / Subscritores de Desconto"
+          >
+            <Key size={18} strokeWidth={1.5} />
+            {subscribers.length > 0 && (
+              <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-orange-500 rounded-full"></span>
+            )}
+          </button>
+          <button 
+            onClick={() => setView('language')}
+            className="p-2 rounded-full hover:bg-brand-accent/10 transition-colors text-brand-primary"
+          >
+            <Globe size={20} strokeWidth={1.5} />
+          </button>
+        </div>
       </header>
 
       <main className="px-5 pt-8 max-w-2xl mx-auto flex flex-col min-h-full">
@@ -586,6 +799,35 @@ export default function App() {
               exit={{ opacity: 0, y: -10 }}
               className="space-y-3 flex-grow flex flex-col justify-center py-4"
             >
+              {/* Special 10% Discount Promotion Banner */}
+              <motion.div 
+                whileHover={{ scale: 1.01 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => setShowDiscountModal(true)}
+                className="bg-gradient-to-r from-amber-600 via-orange-500 to-amber-700 text-white p-4 rounded-2xl shadow-lg shadow-amber-500/15 flex items-center justify-between gap-3 cursor-pointer border border-amber-300/30 relative overflow-hidden"
+              >
+                <div className="absolute -right-4 -bottom-4 w-20 h-20 bg-white/10 rounded-full blur-xl pointer-events-none"></div>
+                <div className="flex items-center gap-3 z-10">
+                  <div className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center shrink-0 border border-white/30">
+                    <Gift size={22} className="text-white animate-bounce" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[10px] font-black uppercase tracking-widest text-amber-200 bg-black/20 px-2 py-0.5 rounded-md">
+                        {isDiscountApplied ? 'Cupão Ativo 10%' : 'Oferta de Boas-Vindas'}
+                      </span>
+                    </div>
+                    <p className="text-sm font-extrabold text-white mt-0.5">
+                      {isDiscountApplied ? 'Tens 10% de desconto no teu pedido!' : 'Ganha 10% de Desconto no teu pedido!'}
+                    </p>
+                  </div>
+                </div>
+                <div className="bg-white text-orange-600 font-black text-xs px-3.5 py-2 rounded-xl shrink-0 shadow-md flex items-center gap-1 z-10">
+                  <span>{isDiscountApplied ? 'Ver Cupão' : 'Obter 10%'}</span>
+                  <ChevronRight size={14} />
+                </div>
+              </motion.div>
+
                <MenuButton 
                   icon={<ShoppingBag size={18} strokeWidth={1.5} />} 
                   label={UI_TEXT.sections.order[lang]} 
@@ -639,7 +881,7 @@ export default function App() {
                     <h3 className="font-bold text-brand-text">{UI_TEXT.location[lang]}</h3>
                   </div>
                   <a 
-                    href="https://maps.app.goo.gl/1MmxxcokJV7iRKn17" 
+                    href="https://maps.app.goo.gl/6ubZDrxZgMDRBUGL7" 
                     target="_blank" 
                     rel="noopener noreferrer"
                     className="w-full bg-brand-primary text-white p-3 rounded-xl font-bold flex items-center justify-center gap-2 active:scale-95 transition-all shadow-md"
@@ -903,28 +1145,6 @@ export default function App() {
                     </div>
                   </div>
                 ))}
-              </div>
-
-              <div className="pt-2">
-                <h3 className="text-brand-primary font-bold text-sm mb-3 flex items-center gap-2">
-                  <Star size={14} /> {UI_TEXT.tastingMenus[lang]}
-                </h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {TASTING_MENUS.map((menu) => (
-                    <div key={menu.id} className="glass-card p-4 bg-brand-accent/10 border-dashed border-2 border-brand-primary/30 flex flex-col cursor-pointer active:scale-[0.98] transition-all" onClick={() => openCustomization(menu)}>
-                      <div className="flex-grow">
-                        <h4 className="font-bold text-sm text-brand-text mb-1">{menu.title[lang]}</h4>
-                        <p className="text-[10px] text-brand-text/60 mb-2">{menu.details?.[lang]}</p>
-                      </div>
-                      <div className="flex items-center justify-between mt-2 pt-2 border-t border-brand-primary/10">
-                        <div className="text-lg font-bold text-brand-primary">{menu.price}</div>
-                        <div className="w-8 h-8 rounded-lg bg-brand-primary text-white flex items-center justify-center shadow-sm">
-                          <Plus size={16} />
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
               </div>
 
               <div className="p-3 bg-brand-accent/5 rounded-xl border border-brand-accent/20">
@@ -1211,7 +1431,7 @@ export default function App() {
 
                 {customizingMenu.step === 'drinks' && (
                   <div className="space-y-6">
-                    {DRINKS.map((category, idx) => (
+                    {DRINKS.filter(category => category.title.pt !== 'Extras').map((category, idx) => (
                       <div key={idx} className="space-y-3">
                         <h3 className="text-brand-primary font-bold text-[10px] uppercase tracking-widest px-1">
                           {category.title[lang]}
@@ -1273,6 +1493,12 @@ export default function App() {
                           {UI_TEXT.sections.empanadas[lang]}
                         </h4>
                         <div className="space-y-2">
+                           {customizingMenu.menu.id === 'm_caldoverde' && (
+                             <div className="flex justify-between items-center text-sm font-bold border-b border-brand-accent/5 pb-2 mb-2">
+                               <span className="text-brand-text">1x Caldo Verde</span>
+                               <span className="text-xs uppercase tracking-wider text-green-600 font-extrabold">Incluído</span>
+                             </div>
+                           )}
                            {Object.entries(customizingMenu.flavors).map(([code, count]) => {
                              const emp = EMPANADAS.find(e => e.code === code);
                              return (
@@ -1498,7 +1724,7 @@ export default function App() {
                                     [item.id]: { ...prev[item.id], quantity: prev[item.id].quantity + 1 }
                                   }));
                                 } else {
-                                  const baseItem = [...EMPANADAS, ...DRINKS.flatMap(c => c.items), ...MENUS, ...TASTING_MENUS].find(i => ('code' in i ? (i as any).code : (i as any).id) === item.id);
+                                  const baseItem = [...EMPANADAS, ...DRINKS.flatMap(c => c.items), ...MENUS].find(i => ('code' in i ? (i as any).code : (i as any).id) === item.id);
                                   if (baseItem) addToCart(baseItem as any, item.type);
                                 }
                               }}
@@ -1512,6 +1738,12 @@ export default function App() {
                         {item.flavors && (
                           <div className="bg-brand-accent/5 rounded-xl p-3 border border-brand-accent/5">
                              <div className="grid grid-cols-1 gap-1 mb-2">
+                                {item.id.startsWith('m_caldoverde') && (
+                                  <div className="flex justify-between text-[11px] font-bold text-brand-text/90 mb-1 pb-1 border-b border-brand-accent/10">
+                                    <span>1x Caldo Verde</span>
+                                    <span className="text-[10px] uppercase tracking-wider text-green-600">Incluído</span>
+                                  </div>
+                                )}
                                 {Object.entries(item.flavors).map(([code, count]) => {
                                   const emp = EMPANADAS.find(e => e.code === code);
                                   return (
@@ -1537,7 +1769,7 @@ export default function App() {
                              </div>
                              <button 
                                 onClick={() => {
-                                   const menu = [...MENUS, ...TASTING_MENUS].find(m => m.id === item.id.split('_')[0]);
+                                   const menu = MENUS.find(m => m.id === item.id.split('_')[0]);
                                    if (menu) openCustomization(menu as MenuOption, true, item.id);
                                 }}
                                 className="w-full py-1.5 rounded-lg bg-white border border-brand-accent/20 text-[10px] font-black text-brand-primary uppercase tracking-widest flex items-center justify-center gap-2"
@@ -1579,10 +1811,88 @@ export default function App() {
                     </div>
                   )}
 
+                  {/* Promo Code Coupon Card */}
+                  <div className="glass-card p-4 rounded-2xl border border-brand-accent/15 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Tag size={16} className="text-orange-500" />
+                        <span className="text-xs font-bold text-brand-text uppercase tracking-wider">Código de Desconto</span>
+                      </div>
+                      {isDiscountApplied && (
+                        <span className="text-[10px] font-black uppercase tracking-widest text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
+                          -10% Ativo (ALHORNO10)
+                        </span>
+                      )}
+                    </div>
+
+                    {!isDiscountApplied ? (
+                      <div className="flex gap-2">
+                        <input 
+                          type="text" 
+                          value={discountInputCode}
+                          onChange={(e) => setDiscountInputCode(e.target.value)}
+                          placeholder="Inserir código (ex: ALHORNO10)"
+                          className="flex-grow px-3.5 py-2.5 rounded-xl border border-brand-accent/20 text-xs uppercase font-mono tracking-wider focus:outline-none focus:border-brand-primary"
+                        />
+                        <button 
+                          onClick={handleApplyPromoCode}
+                          className="px-4 py-2.5 bg-brand-primary text-white rounded-xl text-xs font-bold uppercase tracking-wider active:scale-95 transition-all shadow-sm"
+                        >
+                          Aplicar
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-between bg-emerald-50/80 p-3 rounded-xl border border-emerald-100">
+                        <div className="flex items-center gap-2">
+                          <CheckCircle2 size={16} className="text-emerald-600" />
+                          <span className="text-xs font-bold text-emerald-800">10% de desconto aplicado!</span>
+                        </div>
+                        <button 
+                          onClick={() => {
+                            setIsDiscountApplied(false);
+                            setPromoSuccess('');
+                          }}
+                          className="text-[11px] font-bold text-red-500 underline"
+                        >
+                          Remover
+                        </button>
+                      </div>
+                    )}
+
+                    {promoError && (
+                      <p className="text-[11px] font-medium text-red-500 italic">{promoError}</p>
+                    )}
+                    {promoSuccess && (
+                      <p className="text-[11px] font-medium text-emerald-600 italic">{promoSuccess}</p>
+                    )}
+
+                    {!discountClaimedCode && !isDiscountApplied && (
+                      <p className="text-[11px] text-brand-text/60 italic pt-1 flex items-center gap-1">
+                        <span>Ainda não tens código?</span>
+                        <button 
+                          onClick={() => setShowDiscountModal(true)} 
+                          className="text-brand-primary font-bold underline"
+                        >
+                          Ganha 10% aqui! 🎁
+                        </button>
+                      </p>
+                    )}
+                  </div>
+
                   <div className="p-6 bg-brand-primary rounded-2xl text-white shadow-xl shadow-brand-primary/20 flex justify-between items-center transition-all hover:-translate-y-1">
                     <div>
                       <p className="text-xs uppercase font-bold text-white/60 tracking-widest">{UI_TEXT.cart.total[lang]}</p>
+                      {isDiscountApplied && (
+                        <p className="text-xs text-amber-200 line-through font-semibold">
+                          {rawCartTotal.toFixed(2)} €
+                        </p>
+                      )}
                       <p className="text-3xl font-black">{cartTotal.toFixed(2)} €</p>
+                      {isDiscountApplied && (
+                        <p className="text-[11px] text-emerald-200 font-bold mt-0.5">
+                          Poupaste {discountAmount.toFixed(2)} € (10% de Desconto)
+                        </p>
+                      )}
                     </div>
                     <div className="p-3 bg-white/20 rounded-full">
                       <ShoppingCart size={24} />
@@ -1629,6 +1939,11 @@ export default function App() {
                       </div>
                       {item.flavors && (
                         <div className="pl-8 pb-2 space-y-1">
+                          {item.id.startsWith('m_caldoverde') && (
+                            <p className="text-[12px] font-bold text-brand-text/90 italic border-b border-brand-accent/5 pb-1 mb-1">
+                              1x Caldo Verde
+                            </p>
+                          )}
                           <div className="space-y-0.5">
                             {Object.entries(item.flavors).map(([code, count]) => {
                               const emp = EMPANADAS.find(e => e.code === code);
@@ -1657,9 +1972,23 @@ export default function App() {
                   ))}
                 </div>
 
+                {isDiscountApplied && (
+                  <div className="flex items-center justify-between py-1.5 font-mono text-xs text-emerald-700 font-bold border-b border-dashed border-emerald-200">
+                    <span>Desconto (10% ALHORNO10)</span>
+                    <span>-{discountAmount.toFixed(2)} €</span>
+                  </div>
+                )}
+
                 <div className="flex items-center justify-between py-2">
                   <span className="text-sm font-bold uppercase tracking-widest text-brand-text/40">{UI_TEXT.cart.total[lang]}</span>
-                  <span className="text-4xl font-black text-brand-text">{cartTotal.toFixed(2)} €</span>
+                  <div className="text-right">
+                    {isDiscountApplied && (
+                      <span className="text-xs text-brand-text/40 line-through block font-mono">
+                        {rawCartTotal.toFixed(2)} €
+                      </span>
+                    )}
+                    <span className="text-4xl font-black text-brand-text">{cartTotal.toFixed(2)} €</span>
+                  </div>
                 </div>
 
                 <div className="mt-10 flex justify-center opacity-10">
@@ -1780,6 +2109,278 @@ export default function App() {
             </button>
         </div>
       )}
+
+      {/* 10% Discount Form Pop-Up Modal */}
+      <AnimatePresence>
+        {showDiscountModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl relative border border-brand-accent/20 overflow-hidden"
+            >
+              <button 
+                onClick={handleDismissPopup}
+                className="absolute top-4 right-4 p-2 rounded-full hover:bg-black/5 text-brand-text/50 hover:text-brand-text transition-colors"
+              >
+                <X size={20} />
+              </button>
+
+              {!discountClaimedCode ? (
+                <div className="space-y-5">
+                  <div className="text-center space-y-2">
+                    <div className="w-16 h-16 mx-auto rounded-2xl bg-orange-100 text-orange-600 flex items-center justify-center shadow-inner">
+                      <Gift size={32} className="animate-bounce" />
+                    </div>
+                    <span className="text-[10px] font-black uppercase tracking-widest text-orange-600 bg-orange-50 px-3 py-1 rounded-full border border-orange-200">
+                      OFERTA EXCLUSIVA DE BOAS-VINDAS
+                    </span>
+                    <h3 className="text-2xl font-black text-brand-text leading-tight uppercase italic pt-1">
+                      Ganha 10% de Desconto! 🎁
+                    </h3>
+                    <p className="text-xs text-brand-text/70 leading-relaxed">
+                      Insere o teu nome e e-mail para receberes um voucher de 10% de desconto imediato no teu próximo pedido na Al'Horno.
+                    </p>
+                  </div>
+
+                  <form onSubmit={handleClaimDiscount} className="space-y-3.5">
+                    <div>
+                      <label className="block text-[11px] font-bold uppercase tracking-wider text-brand-text/70 mb-1">
+                        Nome Completo *
+                      </label>
+                      <div className="relative">
+                        <User size={16} className="absolute left-3.5 top-3.5 text-brand-text/40" />
+                        <input 
+                          type="text"
+                          required
+                          value={discountForm.name}
+                          onChange={(e) => setDiscountForm({ ...discountForm, name: e.target.value })}
+                          placeholder="Ex: Maria Santos"
+                          className="w-full pl-10 pr-4 py-3 rounded-xl border border-brand-accent/20 text-xs font-medium focus:outline-none focus:border-brand-primary text-brand-text"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-bold uppercase tracking-wider text-brand-text/70 mb-1">
+                        E-mail *
+                      </label>
+                      <div className="relative">
+                        <Mail size={16} className="absolute left-3.5 top-3.5 text-brand-text/40" />
+                        <input 
+                          type="email"
+                          required
+                          value={discountForm.email}
+                          onChange={(e) => setDiscountForm({ ...discountForm, email: e.target.value })}
+                          placeholder="Ex: maria@email.com"
+                          className="w-full pl-10 pr-4 py-3 rounded-xl border border-brand-accent/20 text-xs font-medium focus:outline-none focus:border-brand-primary text-brand-text"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-bold uppercase tracking-wider text-brand-text/70 mb-1">
+                        Telemóvel <span className="text-[10px] text-brand-text/40 lowercase">(opcional)</span>
+                      </label>
+                      <div className="relative">
+                        <Phone size={16} className="absolute left-3.5 top-3.5 text-brand-text/40" />
+                        <input 
+                          type="tel"
+                          value={discountForm.phone}
+                          onChange={(e) => setDiscountForm({ ...discountForm, phone: e.target.value })}
+                          placeholder="Ex: 912 345 678"
+                          className="w-full pl-10 pr-4 py-3 rounded-xl border border-brand-accent/20 text-xs font-medium focus:outline-none focus:border-brand-primary text-brand-text"
+                        />
+                      </div>
+                    </div>
+
+                    {formError && (
+                      <p className="text-xs font-bold text-red-500 text-center">{formError}</p>
+                    )}
+
+                    <button
+                      type="submit"
+                      className="w-full py-4 rounded-2xl bg-brand-primary text-white font-black text-sm uppercase tracking-wider shadow-lg shadow-brand-primary/20 active:scale-95 transition-all flex items-center justify-center gap-2"
+                    >
+                      <Sparkles size={18} />
+                      Obter o meu Cupão de 10%
+                    </button>
+                  </form>
+
+                  <div className="text-center pt-1">
+                    <button 
+                      onClick={handleDismissPopup}
+                      className="text-[11px] font-bold text-brand-text/50 hover:text-brand-text underline"
+                    >
+                      Continuar sem desconto
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                /* Success State */
+                <div className="text-center space-y-5 py-2">
+                  <div className="w-16 h-16 mx-auto rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center">
+                    <CheckCircle2 size={36} />
+                  </div>
+
+                  <div>
+                    <span className="text-[10px] font-black uppercase tracking-widest text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
+                      CÓDIGO GERADO COM SUCESSO!
+                    </span>
+                    <h3 className="text-2xl font-black text-brand-text uppercase italic pt-2">
+                      O teu Cupão de 10% 🎁
+                    </h3>
+                    <p className="text-xs text-brand-text/70 mt-1">
+                      Obrigado por te registares! O teu código de desconto já está pronto:
+                    </p>
+                  </div>
+
+                  <div className="p-4 rounded-2xl bg-amber-50 border-2 border-dashed border-amber-300 font-mono text-center space-y-1">
+                    <p className="text-[10px] text-amber-700 font-bold uppercase tracking-wider">Código Promocional</p>
+                    <p className="text-3xl font-black text-amber-900 tracking-widest">{discountClaimedCode}</p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <button
+                      onClick={() => {
+                        setIsDiscountApplied(true);
+                        setShowDiscountModal(false);
+                        navigateTo('order');
+                      }}
+                      className="w-full py-4 rounded-2xl bg-emerald-600 text-white font-black text-sm uppercase tracking-wider shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2"
+                    >
+                      <Check size={18} />
+                      Aplicar 10% no meu Pedido Agora
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        navigator.clipboard.writeText(discountClaimedCode);
+                        setShowCopiedToast(true);
+                        setTimeout(() => setShowCopiedToast(false), 2000);
+                      }}
+                      className="w-full py-3 rounded-2xl bg-brand-accent/10 text-brand-text font-bold text-xs uppercase tracking-wider active:scale-95 transition-all flex items-center justify-center gap-2"
+                    >
+                      <Copy size={16} />
+                      Copiar Código ({discountClaimedCode})
+                    </button>
+                  </div>
+                </div>
+              )}
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Admin Leads Manager Modal */}
+      <AnimatePresence>
+        {showAdminModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="bg-white rounded-3xl p-6 sm:p-8 max-w-xl w-full max-h-[85vh] flex flex-col shadow-2xl relative border border-brand-accent/20 overflow-hidden"
+            >
+              <div className="flex items-center justify-between pb-4 border-b border-brand-accent/10">
+                <div className="flex items-center gap-2.5">
+                  <div className="p-2.5 rounded-xl bg-brand-primary/10 text-brand-primary">
+                    <Key size={20} />
+                  </div>
+                  <div>
+                    <h3 className="font-black text-lg text-brand-text uppercase italic">Gestor de Leads / Descontos</h3>
+                    <p className="text-[11px] text-brand-text/60">Subscritores do formulário de 10% de desconto</p>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => setShowAdminModal(false)}
+                  className="p-2 rounded-full hover:bg-black/5 text-brand-text/50 hover:text-brand-text transition-colors"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              <div className="py-4 space-y-4 flex-grow overflow-y-auto">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="p-3.5 bg-orange-50 rounded-2xl border border-orange-100 text-center">
+                    <p className="text-[10px] font-bold text-orange-600 uppercase tracking-wider">Total Registados</p>
+                    <p className="text-2xl font-black text-orange-900">{subscribers.length}</p>
+                  </div>
+                  <div className="p-3.5 bg-emerald-50 rounded-2xl border border-emerald-100 text-center">
+                    <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-wider">Cupão Ativo</p>
+                    <p className="text-lg font-black text-emerald-900 font-mono">ALHORNO10</p>
+                  </div>
+                </div>
+
+                <div className="p-3.5 bg-brand-accent/5 rounded-2xl border border-brand-accent/10 space-y-1 text-xs text-brand-text/70 leading-relaxed">
+                  <p className="font-bold text-brand-primary flex items-center gap-1.5">
+                    <Sparkles size={14} />
+                    Onde está armazenada esta informação?
+                  </p>
+                  <p className="text-[11px]">
+                    Este formulário está <strong>conectado em tempo real ao Firebase Firestore</strong> (coleção <code className="bg-black/5 px-1 rounded font-mono">subscribers</code>). Todos os subscritores são guardados com segurança na nuvem e sincronizados instantaneamente. Podes também exportar a lista em ficheiro <strong>CSV (Excel)</strong> para importar na tua ferramenta de e-mail marketing.
+                  </p>
+                </div>
+
+                {subscribers.length === 0 ? (
+                  <div className="py-10 text-center space-y-2">
+                    <User size={32} className="mx-auto text-brand-text/20" />
+                    <p className="text-xs font-bold text-brand-text/50">Ainda não existem registos de subscritores.</p>
+                    <p className="text-[11px] text-brand-text/40">Abre o formulário no site para testar a subscrição!</p>
+                  </div>
+                ) : (
+                  <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-brand-text/50">Lista de Contactos:</p>
+                    {subscribers.map((s, idx) => (
+                      <div key={s.id || idx} className="p-3 rounded-xl bg-white border border-brand-accent/15 flex items-center justify-between text-xs gap-2">
+                        <div className="space-y-0.5">
+                          <p className="font-bold text-brand-text">{s.name}</p>
+                          <p className="text-[11px] text-brand-text/60 font-mono">{s.email}</p>
+                          {s.phone && <p className="text-[10px] text-brand-primary font-mono">📱 {s.phone}</p>}
+                        </div>
+                        <div className="text-right">
+                          <span className="text-[9px] text-brand-text/40 block">
+                            {new Date(s.createdAt).toLocaleDateString('pt-PT')}
+                          </span>
+                          <span className="text-[10px] font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
+                            {s.code}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="pt-4 border-t border-brand-accent/10 flex flex-col sm:flex-row gap-2">
+                <button
+                  onClick={handleExportCSV}
+                  disabled={subscribers.length === 0}
+                  className="flex-1 py-3 px-4 rounded-2xl bg-emerald-600 text-white font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-md active:scale-95 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  <Download size={16} />
+                  Exportar para CSV (Excel)
+                </button>
+
+                <button
+                  onClick={() => {
+                    localStorage.removeItem('alhorno_popup_dismissed');
+                    localStorage.removeItem('alhorno_claimed_code');
+                    setDiscountClaimedCode(null);
+                    setShowDiscountModal(true);
+                    setShowAdminModal(false);
+                  }}
+                  className="py-3 px-4 rounded-2xl bg-brand-accent/10 text-brand-text font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 active:scale-95 transition-all"
+                >
+                  <Gift size={16} />
+                  Testar Pop-Up
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
