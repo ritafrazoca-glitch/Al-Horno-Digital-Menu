@@ -51,12 +51,3 @@
   background-color: #FAF7F2;
 }
 
-/* Subtle empanada outline background watermark */
-.empanada-bg-pattern {
-  background-color: #FAF7F2;
-  background-image: radial-gradient(#542216 0.75px, transparent 0.75px), radial-gradient(#542216 0.75px, #FAF7F2 0.75px);
-  background-size: 30px 30px;
-  background-position: 0 0, 15px 15px;
-  background-color: #FAF7F2;
-}
-

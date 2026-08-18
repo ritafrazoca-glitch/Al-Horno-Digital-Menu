@@ -70,6 +70,38 @@ export default function App() {
   const [isSubmittingDiscount, setIsSubmittingDiscount] = useState(false);
   const [subscribers, setSubscribers] = useState<SubscriberLead[]>([]);
   const [showAdminModal, setShowAdminModal] = useState(false);
+  const [adminPin, setAdminPin] = useState('');
+  const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
+  const [pinError, setPinError] = useState('');
+  const [logoClickCount, setLogoClickCount] = useState(0);
+
+  // Check for ?admin in URL on load
+  useEffect(() => {
+    if (window.location.search.includes('admin=true') || window.location.search.includes('admin')) {
+      setShowAdminModal(true);
+    }
+  }, []);
+
+  const handleLogoSecretClick = () => {
+    setLogoClickCount(prev => {
+      const next = prev + 1;
+      if (next >= 5) {
+        setShowAdminModal(true);
+        return 0;
+      }
+      return next;
+    });
+  };
+
+  const handleAdminAuth = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (adminPin.toLowerCase().trim() === 'alhorno' || adminPin.trim() === 'alhorno2026' || adminPin.trim() === '1234') {
+      setIsAdminAuthenticated(true);
+      setPinError('');
+    } else {
+      setPinError('PIN incorreto');
+    }
+  };
 
   // Sync subscribers and discount state with localStorage and Firebase Firestore
   useEffect(() => {
@@ -238,7 +270,7 @@ export default function App() {
   // View: Seleção de Idioma
   if (!lang || view === 'language') {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-[#FAF7F2] text-[#2D1F1B] empanada-bg-pattern relative">
+      <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-[#FAF7F2] text-[#2D1F1B] relative">
         <motion.div 
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
@@ -301,7 +333,10 @@ export default function App() {
           )}
           
           <button 
-            onClick={() => navigateTo('home')} 
+            onClick={() => {
+              navigateTo('home');
+              handleLogoSecretClick();
+            }} 
             className="flex items-center gap-2 text-left"
           >
             <span className="font-display font-semibold text-[#542216] tracking-tight text-base uppercase">
@@ -311,14 +346,6 @@ export default function App() {
         </div>
 
         <div className="flex items-center gap-1.5">
-          <button 
-            onClick={() => setShowAdminModal(true)}
-            className="p-2 rounded-lg hover:bg-[#EFE7DC] transition-colors text-[#542216]/60 hover:text-[#542216]"
-            title="Gestão de Contactos"
-          >
-            <Key size={15} strokeWidth={1.8} />
-          </button>
-
           <button 
             onClick={() => setView('language')}
             className="px-2.5 py-1 rounded-full border border-[#D9CBB9] hover:bg-[#EFE7DC] transition-colors text-[#542216] flex items-center gap-1.5 text-xs font-medium"
@@ -905,70 +932,121 @@ export default function App() {
         )}
       </AnimatePresence>
 
-      {/* Admin Subscritores Modal */}
+      {/* Admin Subscritores Modal (PIN Protected & Hidden from Visitors) */}
       <AnimatePresence>
         {showAdminModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs">
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-white rounded-2xl p-5 max-w-md w-full max-h-[80vh] flex flex-col shadow-lg border border-[#E8DFD3]"
+              className="bg-white rounded-2xl p-5 max-w-md w-full max-h-[85vh] flex flex-col shadow-xl border border-[#E8DFD3]"
             >
               <div className="flex items-center justify-between pb-3 border-b border-[#E8DFD3]">
-                <div>
-                  <h3 className="font-display font-semibold text-sm text-[#2D1F1B]">Subscritores 10% Desconto</h3>
-                  <p className="text-[10px] text-[#542216]">{subscribers.length} contactos registados</p>
+                <div className="flex items-center gap-2">
+                  <Key size={16} className="text-[#542216]" />
+                  <h3 className="font-display font-semibold text-sm text-[#2D1F1B]">Área de Gestão Interna</h3>
                 </div>
                 <button 
-                  onClick={() => setShowAdminModal(false)}
+                  onClick={() => {
+                    setShowAdminModal(false);
+                    setIsAdminAuthenticated(false);
+                    setAdminPin('');
+                    setPinError('');
+                  }}
                   className="p-1 rounded-md hover:bg-[#FAF7F2] text-[#8C7B71]"
                 >
                   <X size={18} />
                 </button>
               </div>
 
-              <div className="py-3 flex-grow overflow-y-auto space-y-2">
-                {subscribers.length === 0 ? (
-                  <p className="text-xs text-center text-[#8C7B71] py-6 font-normal">Sem subscritores registados.</p>
-                ) : (
-                  subscribers.map((s, idx) => (
-                    <div key={s.id || idx} className="p-2.5 rounded-lg bg-[#FAF7F2] border border-[#E8DFD3] text-xs flex justify-between items-center">
-                      <div>
-                        <p className="font-semibold text-[#2D1F1B]">{s.name}</p>
-                        <p className="text-[10px] text-[#6B5B53] font-mono">{s.email}</p>
-                        {s.phone && <p className="text-[10px] text-[#542216] font-mono">{s.phone}</p>}
-                      </div>
-                      <span className="text-[10px] font-mono text-[#8C7B71]">
-                        {new Date(s.createdAt).toLocaleDateString('pt-PT')}
-                      </span>
-                    </div>
-                  ))
-                )}
-              </div>
+              {!isAdminAuthenticated ? (
+                <form onSubmit={handleAdminAuth} className="py-6 space-y-4">
+                  <div className="text-center space-y-1">
+                    <p className="text-xs text-[#6B5B53] font-normal">
+                      Introduza a palavra-passe ou PIN para aceder à lista de subscritores:
+                    </p>
+                  </div>
 
-              <div className="pt-2 border-t border-[#E8DFD3] flex gap-2">
-                <button
-                  onClick={handleExportCSV}
-                  disabled={subscribers.length === 0}
-                  className="flex-1 py-2 rounded-lg bg-[#542216] text-white font-medium text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 disabled:opacity-50"
-                >
-                  <Download size={13} />
-                  Exportar CSV
-                </button>
-                <button
-                  onClick={() => {
-                    localStorage.removeItem('alhorno_popup_dismissed');
-                    localStorage.removeItem('alhorno_claimed_code');
-                    setDiscountClaimedCode(null);
-                    setShowDiscountModal(true);
-                    setShowAdminModal(false);
-                  }}
-                  className="py-2 px-3 rounded-lg bg-[#F5ECD7] text-[#542216] font-semibold text-xs uppercase"
-                >
-                  Testar Pop-Up
-                </button>
-              </div>
+                  <div className="space-y-1.5 max-w-xs mx-auto">
+                    <input
+                      type="password"
+                      placeholder="PIN / Palavra-passe"
+                      value={adminPin}
+                      onChange={(e) => {
+                        setAdminPin(e.target.value);
+                        setPinError('');
+                      }}
+                      className="w-full px-3 py-2 text-center text-sm rounded-lg border border-[#D9CBB9] focus:outline-none focus:border-[#542216]"
+                      autoFocus
+                    />
+                    {pinError && (
+                      <p className="text-xs text-red-600 text-center font-medium">{pinError}</p>
+                    )}
+                  </div>
+
+                  <div className="flex justify-center pt-1">
+                    <button
+                      type="submit"
+                      className="px-6 py-2 rounded-lg bg-[#542216] text-white text-xs font-semibold uppercase tracking-wider hover:bg-[#431A11] transition-colors"
+                    >
+                      Aceder
+                    </button>
+                  </div>
+                </form>
+              ) : (
+                <>
+                  <div className="py-2 border-b border-[#E8DFD3] flex items-center justify-between text-xs">
+                    <span className="font-semibold text-[#2D1F1B]">Subscritores 10% Desconto</span>
+                    <span className="text-[11px] text-[#542216] bg-[#F5ECD7] px-2 py-0.5 rounded-full font-medium">
+                      {subscribers.length} contactos
+                    </span>
+                  </div>
+
+                  <div className="py-3 flex-grow overflow-y-auto space-y-2 max-h-[50vh]">
+                    {subscribers.length === 0 ? (
+                      <p className="text-xs text-center text-[#8C7B71] py-6 font-normal">Sem subscritores registados.</p>
+                    ) : (
+                      subscribers.map((s, idx) => (
+                        <div key={s.id || idx} className="p-2.5 rounded-lg bg-[#FAF7F2] border border-[#E8DFD3] text-xs flex justify-between items-center">
+                          <div>
+                            <p className="font-semibold text-[#2D1F1B]">{s.name}</p>
+                            <p className="text-[10px] text-[#6B5B53] font-mono">{s.email}</p>
+                            {s.phone && <p className="text-[10px] text-[#542216] font-mono">{s.phone}</p>}
+                          </div>
+                          <span className="text-[10px] font-mono text-[#8C7B71]">
+                            {new Date(s.createdAt).toLocaleDateString('pt-PT')}
+                          </span>
+                        </div>
+                      ))
+                    )}
+                  </div>
+
+                  <div className="pt-3 border-t border-[#E8DFD3] flex gap-2">
+                    <button
+                      onClick={handleExportCSV}
+                      disabled={subscribers.length === 0}
+                      className="flex-1 py-2 rounded-lg bg-[#542216] text-white font-medium text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 disabled:opacity-50 hover:bg-[#431A11] transition-colors"
+                    >
+                      <Download size={13} />
+                      Exportar CSV
+                    </button>
+                    <button
+                      onClick={() => {
+                        localStorage.removeItem('alhorno_popup_dismissed');
+                        localStorage.removeItem('alhorno_claimed_code');
+                        setDiscountClaimedCode(null);
+                        setShowDiscountModal(true);
+                        setShowAdminModal(false);
+                        setIsAdminAuthenticated(false);
+                      }}
+                      className="py-2 px-3 rounded-lg bg-[#F5ECD7] text-[#542216] font-semibold text-xs uppercase hover:bg-[#EFE2C5] transition-colors"
+                    >
+                      Testar Pop-Up
+                    </button>
+                  </div>
+                </>
+              )}
             </motion.div>
           </div>
         )}
