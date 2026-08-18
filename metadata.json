@@ -1,5 +1,6 @@
 {
   "name": "Al'Horno Empanadas - Menu Digital",
-  "description": "Menu digital interativo para o restaurante Al'Horno Empanadas, com suporte multi-idioma e design mobile-first.",
-  "requestFramePermissions": []
+  "description": "Menu digital artesanal do restaurante Al'Horno Empanadas na Aldeia da Praia, com ementa de empanadas no forno a lenha, bebidas, vinhos e eventos.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

@@ -13,6 +13,24 @@
         "code": { "type": "string" }
       },
       "required": ["name", "email", "createdAt", "code"]
+    },
+    "reservations": {
+      "title": "Takeaway Reservations",
+      "description": "Takeaway orders and pickup reservations",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "email": { "type": "string" },
+        "phone": { "type": "string" },
+        "items": { "type": "array" },
+        "pickupDate": { "type": "string" },
+        "pickupTime": { "type": "string" },
+        "totalAmount": { "type": "number" },
+        "createdAt": { "type": "string" },
+        "status": { "type": "string" }
+      },
+      "required": ["name", "email", "phone", "items", "pickupDate", "pickupTime", "createdAt"]
     }
   }
 }
