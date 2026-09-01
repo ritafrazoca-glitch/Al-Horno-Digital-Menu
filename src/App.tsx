@@ -17,8 +17,6 @@ import {
   Instagram,
   X,
   Copy,
-  CheckCircle2,
-  Gift,
   Mail,
   Download,
   Key,
@@ -30,7 +28,7 @@ import {
   Clock
 } from 'lucide-react';
 import { db } from './lib/firebase';
-import { collection, addDoc, onSnapshot, query, orderBy } from 'firebase/firestore';
+import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
 import { 
   Language, 
   EMPANADAS, 
@@ -62,12 +60,7 @@ export default function App() {
   const [showCopiedToast, setShowCopiedToast] = useState(false);
   const [showEmailCopied, setShowEmailCopied] = useState(false);
 
-  // 10% Discount Pop-up State
-  const [showDiscountModal, setShowDiscountModal] = useState(false);
-  const [discountClaimedCode, setDiscountClaimedCode] = useState<string | null>(null);
-  const [discountForm, setDiscountForm] = useState({ name: '', email: '', phone: '' });
-  const [formError, setFormError] = useState('');
-  const [isSubmittingDiscount, setIsSubmittingDiscount] = useState(false);
+  // Admin / Leads Management
   const [subscribers, setSubscribers] = useState<SubscriberLead[]>([]);
   const [showAdminModal, setShowAdminModal] = useState(false);
   const [adminPin, setAdminPin] = useState('');
@@ -114,11 +107,6 @@ export default function App() {
       }
     }
 
-    const savedClaimedCode = localStorage.getItem('alhorno_claimed_code');
-    if (savedClaimedCode) {
-      setDiscountClaimedCode(savedClaimedCode);
-    }
-
     try {
       const q = query(collection(db, 'subscribers'), orderBy('createdAt', 'desc'));
       const unsubscribeSubscribers = onSnapshot(q, (snapshot) => {
@@ -144,75 +132,10 @@ export default function App() {
     }
   }, []);
 
-  const triggerDiscountPopupIfNeeded = () => {
-    const dismissed = localStorage.getItem('alhorno_popup_dismissed');
-    const claimed = localStorage.getItem('alhorno_claimed_code');
-    if (!dismissed && !claimed) {
-      setTimeout(() => {
-        setShowDiscountModal(true);
-      }, 700);
-    }
-  };
-
   const selectLanguage = (l: Language) => {
     setLang(l);
     setView('home');
     window.scrollTo(0, 0);
-    triggerDiscountPopupIfNeeded();
-  };
-
-  const handleDismissPopup = () => {
-    setShowDiscountModal(false);
-    localStorage.setItem('alhorno_popup_dismissed', 'true');
-  };
-
-  const handleClaimDiscount = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!discountForm.name.trim()) {
-      setFormError('Por favor, indique o seu nome.');
-      return;
-    }
-    if (!discountForm.email.trim() || !discountForm.email.includes('@')) {
-      setFormError('Por favor, insira um e-mail válido.');
-      return;
-    }
-
-    setFormError('');
-    setIsSubmittingDiscount(true);
-    const code = 'ALHORNO10';
-    const createdAtIso = new Date().toISOString();
-    const leadData = {
-      name: discountForm.name.trim(),
-      email: discountForm.email.trim(),
-      phone: discountForm.phone.trim() || '',
-      createdAt: createdAtIso,
-      code
-    };
-
-    try {
-      const docRef = await addDoc(collection(db, 'subscribers'), leadData);
-      const newLead: SubscriberLead = {
-        id: docRef.id,
-        ...leadData,
-        phone: leadData.phone || undefined
-      };
-      setSubscribers(prev => [newLead, ...prev.filter(s => s.id !== docRef.id)]);
-      localStorage.setItem('alhorno_subscribers', JSON.stringify([newLead, ...subscribers]));
-    } catch (err) {
-      console.error('Error saving subscriber:', err);
-      const newLead: SubscriberLead = {
-        id: `lead_${Date.now()}`,
-        ...leadData,
-        phone: leadData.phone || undefined
-      };
-      setSubscribers(prev => [newLead, ...prev]);
-      localStorage.setItem('alhorno_subscribers', JSON.stringify([newLead, ...subscribers]));
-    } finally {
-      setIsSubmittingDiscount(false);
-    }
-
-    setDiscountClaimedCode(code);
-    localStorage.setItem('alhorno_claimed_code', code);
   };
 
   const handleExportCSV = () => {
@@ -388,35 +311,6 @@ export default function App() {
                   </div>
                   <div className="h-px w-8 bg-[#542216]/25"></div>
                 </div>
-              </div>
-
-              {/* COMPACT & SLEEK 10% DISCOUNT CARD ("Pequena e Maneirinha") */}
-              <div 
-                onClick={() => setShowDiscountModal(true)}
-                className="p-3 px-3.5 rounded-xl bg-white border-2 border-[#542216] text-[#2D1F1B] flex items-center justify-between gap-3 cursor-pointer shadow-xs hover:bg-[#FDFBF7] transition-all group"
-              >
-                <div className="flex items-center gap-2.5 min-w-0">
-                  <div className="w-7 h-7 rounded-lg bg-[#542216] text-white flex items-center justify-center shrink-0">
-                    <Gift size={14} />
-                  </div>
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-[12px] font-semibold tracking-tight text-[#542216] truncate">
-                        {UI_TEXT.discount.bannerTitle[lang]}
-                      </span>
-                      <span className="text-[9px] font-bold bg-[#E85D04] text-white px-1.5 py-0.2 rounded-full shrink-0 uppercase tracking-wide">
-                        -10%
-                      </span>
-                    </div>
-                    <p className="text-[11px] text-[#6B5B53] font-normal truncate">
-                      {UI_TEXT.discount.bannerSubtitle[lang]}
-                    </p>
-                  </div>
-                </div>
-                <span className="text-[11px] font-medium text-[#542216] bg-[#F5ECD7] px-2.5 py-1 rounded-md shrink-0 flex items-center gap-1 group-hover:translate-x-0.5 transition-transform">
-                  {discountClaimedCode ? 'Ver Código' : 'Obter'}
-                  <ArrowRight size={12} />
-                </span>
               </div>
 
               {/* UBER EATS CARD (Official Branded Colors & Clear Contrast) */}
@@ -803,135 +697,6 @@ export default function App() {
         </nav>
       )}
 
-      {/* 10% Discount Pop-up Modal (Compact & Sleek / "Maneirinha") */}
-      <AnimatePresence>
-        {showDiscountModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-white rounded-2xl p-4 sm:p-5 max-w-xs sm:max-w-sm w-full shadow-lg relative border-2 border-[#542216]"
-            >
-              <button 
-                onClick={handleDismissPopup}
-                className="absolute top-3.5 right-3.5 p-1 rounded-md hover:bg-[#FAF7F2] text-[#8C7B71] transition-colors"
-                aria-label="Fechar"
-              >
-                <X size={16} />
-              </button>
-
-              {!discountClaimedCode ? (
-                <div className="space-y-3 pt-0.5">
-                  <div className="text-center space-y-0.5">
-                    <span className="text-[9.5px] font-semibold uppercase tracking-wider text-[#542216] block">
-                      Oferta ao Balcão
-                    </span>
-                    <h3 className="font-display font-semibold text-sm text-[#2D1F1B]">
-                      {UI_TEXT.discount.modalTitle[lang || 'pt']}
-                    </h3>
-                    <p className="text-[11px] text-[#6B5B53] leading-snug font-normal">
-                      {UI_TEXT.discount.modalDescription[lang || 'pt']}
-                    </p>
-                  </div>
-
-                  <form onSubmit={handleClaimDiscount} className="space-y-2">
-                    <div>
-                      <label className="block text-[9.5px] font-semibold uppercase tracking-wider text-[#542216] mb-0.5">
-                        Nome *
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        value={discountForm.name}
-                        onChange={(e) => setDiscountForm({ ...discountForm, name: e.target.value })}
-                        placeholder="O seu nome"
-                        className="w-full px-2.5 py-1.5 rounded-lg border border-[#D9CBB9] text-xs focus:outline-none focus:border-[#542216] bg-[#FAF7F2] text-[#2D1F1B]"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-[9.5px] font-semibold uppercase tracking-wider text-[#542216] mb-0.5">
-                        E-mail *
-                      </label>
-                      <input
-                        type="email"
-                        required
-                        value={discountForm.email}
-                        onChange={(e) => setDiscountForm({ ...discountForm, email: e.target.value })}
-                        placeholder="email@exemplo.pt"
-                        className="w-full px-2.5 py-1.5 rounded-lg border border-[#D9CBB9] text-xs focus:outline-none focus:border-[#542216] bg-[#FAF7F2] text-[#2D1F1B]"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-[9.5px] font-semibold uppercase tracking-wider text-[#542216] mb-0.5">
-                        Telemóvel (Opcional)
-                      </label>
-                      <input
-                        type="tel"
-                        value={discountForm.phone}
-                        onChange={(e) => setDiscountForm({ ...discountForm, phone: e.target.value })}
-                        placeholder="912 345 678"
-                        className="w-full px-2.5 py-1.5 rounded-lg border border-[#D9CBB9] text-xs focus:outline-none focus:border-[#542216] bg-[#FAF7F2] text-[#2D1F1B]"
-                      />
-                    </div>
-
-                    {formError && (
-                      <p className="text-red-600 text-[11px] text-center font-medium">{formError}</p>
-                    )}
-
-                    <button
-                      type="submit"
-                      disabled={isSubmittingDiscount}
-                      className="w-full mt-1.5 py-2 rounded-lg bg-[#542216] text-[#FAF7F2] font-semibold text-xs uppercase tracking-wider hover:bg-[#431A11] transition-colors"
-                    >
-                      {isSubmittingDiscount ? 'A gerar...' : 'Obter Código (10%)'}
-                    </button>
-                  </form>
-                </div>
-              ) : (
-                <div className="text-center space-y-3 py-1">
-                  <div className="w-8 h-8 mx-auto rounded-full bg-[#EBF7EE] text-[#1E7E34] flex items-center justify-center">
-                    <CheckCircle2 size={18} />
-                  </div>
-
-                  <div>
-                    <span className="text-[9.5px] font-semibold uppercase tracking-wider text-[#1E7E34] block">
-                      Código Ativo
-                    </span>
-                    <h3 className="font-display font-semibold text-sm text-[#2D1F1B] mt-0.5">
-                      10% de Desconto Presencial
-                    </h3>
-                  </div>
-
-                  <div className="p-2.5 rounded-lg bg-[#FAF7F2] border border-[#D9CBB9] font-mono text-center">
-                    <p className="text-[9px] text-[#542216] font-medium uppercase tracking-wider">Apresente no balcão:</p>
-                    <p className="text-lg font-bold text-[#2D1F1B] tracking-widest mt-0.5">{discountClaimedCode}</p>
-                  </div>
-
-                  <p className="text-[10.5px] text-[#6B5B53] leading-tight font-normal">
-                    Válido exclusivamente para compras presenciais ao balcão durante 1 semana.
-                  </p>
-
-                  <button
-                    onClick={() => {
-                      navigator.clipboard.writeText(discountClaimedCode);
-                      setShowCopiedToast(true);
-                      setTimeout(() => setShowCopiedToast(false), 2000);
-                    }}
-                    className="w-full py-2 rounded-lg bg-[#542216] text-white font-semibold text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 hover:bg-[#431A11] transition-colors"
-                  >
-                    <Copy size={13} />
-                    {showCopiedToast ? 'Copiado!' : 'Copiar Código'}
-                  </button>
-                </div>
-              )}
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-
       {/* Admin Subscritores Modal (PIN Protected & Hidden from Visitors) */}
       <AnimatePresence>
         {showAdminModal && (
@@ -997,7 +762,7 @@ export default function App() {
               ) : (
                 <>
                   <div className="py-2 border-b border-[#E8DFD3] flex items-center justify-between text-xs">
-                    <span className="font-semibold text-[#2D1F1B]">Subscritores 10% Desconto</span>
+                    <span className="font-semibold text-[#2D1F1B]">Subscritores Registados</span>
                     <span className="text-[11px] text-[#542216] bg-[#F5ECD7] px-2 py-0.5 rounded-full font-medium">
                       {subscribers.length} contactos
                     </span>
@@ -1026,23 +791,10 @@ export default function App() {
                     <button
                       onClick={handleExportCSV}
                       disabled={subscribers.length === 0}
-                      className="flex-1 py-2 rounded-lg bg-[#542216] text-white font-medium text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 disabled:opacity-50 hover:bg-[#431A11] transition-colors"
+                      className="w-full py-2 rounded-lg bg-[#542216] text-white font-medium text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 disabled:opacity-50 hover:bg-[#431A11] transition-colors"
                     >
                       <Download size={13} />
                       Exportar CSV
-                    </button>
-                    <button
-                      onClick={() => {
-                        localStorage.removeItem('alhorno_popup_dismissed');
-                        localStorage.removeItem('alhorno_claimed_code');
-                        setDiscountClaimedCode(null);
-                        setShowDiscountModal(true);
-                        setShowAdminModal(false);
-                        setIsAdminAuthenticated(false);
-                      }}
-                      className="py-2 px-3 rounded-lg bg-[#F5ECD7] text-[#542216] font-semibold text-xs uppercase hover:bg-[#EFE2C5] transition-colors"
-                    >
-                      Testar Pop-Up
                     </button>
                   </div>
                 </>

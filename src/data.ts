@@ -371,38 +371,6 @@ export const UI_TEXT = {
       es: '¿Prefiere recibir en casa? Pida cómodamente a través de Uber Eats.' 
     }
   },
-  discount: {
-    bannerTitle: { 
-      pt: '10% de Desconto no Balcão', 
-      en: '10% Counter Discount', 
-      es: '10% de Descuento en Mostrador' 
-    },
-    bannerSubtitle: { 
-      pt: 'Válido ao balcão presencial • 1 semana', 
-      en: 'Valid in-person at the counter • 1 week', 
-      es: 'Válido en mostrador presencial • 1 semana' 
-    },
-    modalTitle: { 
-      pt: '10% de Desconto no Balcão', 
-      en: '10% Counter Discount', 
-      es: '10% de Descuento en Mostrador' 
-    },
-    modalDescription: { 
-      pt: 'Registe o seu contacto para receber um código de 10% de desconto, válido apenas para compras presenciais ao balcão durante 1 semana.', 
-      en: 'Register to receive a 10% discount code, valid only for in-person counter purchases for 1 week.', 
-      es: 'Regístrese para recibir un código del 10% de descuento, válido únicamente para compras presenciales en mostrador durante 1 semana.' 
-    },
-    conditionTitle: {
-      pt: 'Termos e Condições',
-      en: 'Terms & Conditions',
-      es: 'Términos y Condiciones'
-    },
-    conditionText: {
-      pt: 'Válido exclusivamente para compras presenciais ao balcão no Al\'Horno. Validade de 1 semana a contar da data de registo.',
-      en: 'Valid exclusively for in-person counter purchases at Al\'Horno. Valid for 1 week from registration date.',
-      es: 'Válido exclusivamente para compras presenciales en el mostrador de Al\'Horno. Válido durante 1 semana a partir de la fecha de registro.'
-    }
-  },
   events: {
     title: { 
       pt: "Al'Horno no teu Evento", 
@@ -452,11 +420,11 @@ export const UI_TEXT = {
   allergenWarning: {
     pt: 'Todos os produtos podem conter vestígios de glúten, leite, ovo, soja, frutos de casca rija e outros alergénios devido aos métodos de confeção e manipulação.',
     en: 'All products may contain traces of gluten, milk, egg, soy, nuts and other allergens due to cooking and handling methods.',
-    es: 'Todos los productos pueden contener trazas de gluten, leche, huevo, soja, frutos de cáscara y otros alérgenos debido a los métodos de confección y manipulación.'
+    es: 'Todos los produtos pueden contener trazas de gluten, leche, huevo, soja, frutos de cáscara y otros alérgenos debido a los métodos de confección y manipulación.'
   },
   vatNote: {
     pt: 'Os valores apresentados já incluem IVA à taxa legal em vigor.',
     en: 'Prices include VAT at the legal rate in force.',
-    es: 'Los precios incluyen IVA al tipo legal vigente.'
+    es: 'Los precios incluem IVA al tipo legal vigente.'
   }
 };
