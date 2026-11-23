@@ -1,2 +1,4 @@
 User-agent: *
 Allow: /
+
+Sitemap: https://al-horno-digital-menu.vercel.app/sitemap.xml
