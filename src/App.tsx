@@ -1,887 +1,678 @@
-/**
- * @license
- * SPDX-License-Identifier: Apache-2.0
- */
-
-import React, { useState, useEffect, useMemo } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
-import { 
-  ArrowLeft, 
-  Globe, 
-  Flame, 
-  Utensils, 
-  Beer, 
+import React, { useEffect, useMemo, useState } from 'react';
+import {
+  ArrowLeft,
   ArrowRight,
-  MapPin,
-  ExternalLink,
-  Instagram,
-  X,
-  Copy,
-  Mail,
-  Download,
-  Key,
-  Wine,
-  Leaf,
-  PartyPopper,
-  Info,
+  Beer,
   Check,
-  Clock
+  Clock,
+  Copy,
+  ExternalLink,
+  Flame,
+  Home,
+  Info,
+  Instagram,
+  Leaf,
+  Mail,
+  MapPin,
+  PartyPopper,
+  Search,
+  ShoppingBag,
+  Utensils,
+  Wine,
+  X,
 } from 'lucide-react';
-import { db } from './lib/firebase';
-import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
-import { 
-  Language, 
-  EMPANADAS, 
-  EXTRAS,
-  DRINKS, 
-  MENUS, 
-  UI_TEXT, 
-  ALLERGENS 
-} from './data';
+import { ALLERGENS, CONTACT, DRINKS, EMPANADAS, EXTRAS, Language, MENUS, UI_TEXT } from './data';
 import { cn } from './lib/utils';
 
-type View = 'language' | 'home' | 'empanadas' | 'drinks' | 'menus';
+type View = 'home' | 'empanadas' | 'drinks' | 'menus';
+type Filter = 'all' | 'classicas' | 'premium' | 'veg';
 
-const UBER_EATS_URL = "https://www.ubereats.com/pt/store/al-horno/9JfmUE8GWs2ds3R9k3foiA?ps=1";
+const VIEWS: View[] = ['home', 'empanadas', 'drinks', 'menus'];
+const LANGS: { code: Language; label: string; name: string }[] = [
+  { code: 'pt', label: 'PT', name: 'Português' },
+  { code: 'en', label: 'EN', name: 'English' },
+  { code: 'es', label: 'ES', name: 'Español' },
+];
+const LANG_KEY = 'alhorno_lang';
 
-interface SubscriberLead {
-  id: string;
-  name: string;
-  email: string;
-  phone?: string;
-  createdAt: string;
-  code: string;
+const CLASSIC_COUNT = EMPANADAS.filter((e) => !e.premium).length;
+const PREMIUM_COUNT = EMPANADAS.length - CLASSIC_COUNT;
+
+function readView(): View {
+  const hash = window.location.hash.replace('#', '') as View;
+  return VIEWS.includes(hash) ? hash : 'home';
 }
 
-export default function App() {
-  const [lang, setLang] = useState<Language | null>(null);
-  const [view, setView] = useState<View>('language');
-  const [empanadaFilter, setEmpanadaFilter] = useState<'all' | 'classicas' | 'premium' | 'veg'>('all');
-  const [showCopiedToast, setShowCopiedToast] = useState(false);
-  const [showEmailCopied, setShowEmailCopied] = useState(false);
-
-  // Admin / Leads Management
-  const [subscribers, setSubscribers] = useState<SubscriberLead[]>([]);
-  const [showAdminModal, setShowAdminModal] = useState(false);
-  const [adminPin, setAdminPin] = useState('');
-  const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
-  const [pinError, setPinError] = useState('');
-  const [logoClickCount, setLogoClickCount] = useState(0);
-
-  // Check for ?admin in URL on load
-  useEffect(() => {
-    if (window.location.search.includes('admin=true') || window.location.search.includes('admin')) {
-      setShowAdminModal(true);
-    }
-  }, []);
-
-  const handleLogoSecretClick = () => {
-    setLogoClickCount(prev => {
-      const next = prev + 1;
-      if (next >= 5) {
-        setShowAdminModal(true);
-        return 0;
-      }
-      return next;
-    });
-  };
-
-  const handleAdminAuth = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (adminPin.toLowerCase().trim() === 'alhorno' || adminPin.trim() === 'alhorno2026' || adminPin.trim() === '1234') {
-      setIsAdminAuthenticated(true);
-      setPinError('');
-    } else {
-      setPinError('PIN incorreto');
-    }
-  };
-
-  // Sync subscribers and discount state with localStorage and Firebase Firestore
-  useEffect(() => {
-    const savedSubscribers = localStorage.getItem('alhorno_subscribers');
-    if (savedSubscribers) {
-      try {
-        setSubscribers(JSON.parse(savedSubscribers));
-      } catch (e) {
-        console.error("Error loading subscribers", e);
-      }
-    }
-
-    try {
-      const q = query(collection(db, 'subscribers'), orderBy('createdAt', 'desc'));
-      const unsubscribeSubscribers = onSnapshot(q, (snapshot) => {
-        const firestoreSubscribers: SubscriberLead[] = snapshot.docs.map(doc => ({
-          id: doc.id,
-          name: doc.data().name || '',
-          email: doc.data().email || '',
-          phone: doc.data().phone || undefined,
-          createdAt: doc.data().createdAt || new Date().toISOString(),
-          code: doc.data().code || 'ALHORNO10'
-        }));
-        setSubscribers(firestoreSubscribers);
-        localStorage.setItem('alhorno_subscribers', JSON.stringify(firestoreSubscribers));
-      }, (err) => {
-        console.warn('Firestore subscription cached:', err);
-      });
-
-      return () => {
-        unsubscribeSubscribers();
-      };
-    } catch (err) {
-      console.error('Error connecting to Firestore:', err);
-    }
-  }, []);
-
-  const selectLanguage = (l: Language) => {
-    setLang(l);
-    setView('home');
-    window.scrollTo(0, 0);
-  };
-
-  const handleExportCSV = () => {
-    if (subscribers.length === 0) {
-      alert('Não existem registos de subscrição.');
-      return;
-    }
-
-    const headers = ['ID', 'Nome', 'Email', 'Telefone', 'Data/Hora', 'Codigo'];
-    const rows = subscribers.map(s => [
-      s.id,
-      `"${s.name.replace(/"/g, '""')}"`,
-      `"${s.email.replace(/"/g, '""')}"`,
-      `"${s.phone || ''}"`,
-      s.createdAt,
-      s.code
-    ]);
-
-    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement('a');
-    link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `alhorno_subscritores_10desconto_${new Date().toISOString().slice(0, 10)}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
-  const handleCopyEventsEmail = () => {
-    navigator.clipboard.writeText(UI_TEXT.events.email);
-    setShowEmailCopied(true);
-    setTimeout(() => setShowEmailCopied(false), 2000);
-  };
-
-  const navigateTo = (newView: View) => {
-    setView(newView);
-    window.scrollTo(0, 0);
-  };
-
-  const goBack = () => {
-    if (view === 'home') {
-      setView('language');
-    } else {
-      setView('home');
-    }
-  };
-
-  const displayedEmpanadas = useMemo(() => {
-    if (empanadaFilter === 'classicas') return EMPANADAS.filter(e => !e.premium);
-    if (empanadaFilter === 'premium') return EMPANADAS.filter(e => e.premium);
-    if (empanadaFilter === 'veg') return EMPANADAS.filter(e => e.vegetarian);
-    return EMPANADAS;
-  }, [empanadaFilter]);
-
-  // View: Seleção de Idioma
-  if (!lang || view === 'language') {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-[#FAF7F2] text-[#2D1F1B] relative">
-        <motion.div 
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4 }}
-          className="text-center mb-7"
-        >
-          {/* Authentic Logo Header Frame with Decorative Lines */}
-          <div className="flex items-center justify-center gap-3 mb-2">
-            <div className="h-px w-10 bg-[#542216]/30"></div>
-            <div className="w-28 h-20 flex items-center justify-center">
-              <img 
-                src="/logo.png" 
-                alt="Al'Horno" 
-                className="max-w-full max-h-full object-contain drop-shadow-xs"
-                onError={(e) => {
-                  const target = e.target as HTMLImageElement;
-                  if (!target.src.includes('logo.png.png')) {
-                    target.src = "/logo.png.png";
-                  }
-                }}
-              />
-            </div>
-            <div className="h-px w-10 bg-[#542216]/30"></div>
-          </div>
-        </motion.div>
-
-        <div className="w-full max-w-xs space-y-2.5 z-10">
-          <p className="text-center text-[#6B5B53] text-[10px] font-medium uppercase tracking-wider mb-2">
-            {UI_TEXT.chooseLanguage.pt} / {UI_TEXT.chooseLanguage.en} / {UI_TEXT.chooseLanguage.es}
-          </p>
-          
-          <LanguageButton onClick={() => selectLanguage('pt')} flag="🇵🇹" label="Português" />
-          <LanguageButton onClick={() => selectLanguage('en')} flag="🇬🇧" label="English" />
-          <LanguageButton onClick={() => selectLanguage('es')} flag="🇪🇸" label="Español" />
-        </div>
-
-        {/* Checkered Bottom Bar */}
-        <div className="fixed bottom-0 left-0 right-0 h-4 checkered-pattern border-t border-[#542216]/20"></div>
-      </div>
-    );
+function readLang(): Language {
+  const fromUrl = new URLSearchParams(window.location.search).get('lang');
+  if (fromUrl === 'pt' || fromUrl === 'en' || fromUrl === 'es') return fromUrl;
+  try {
+    const saved = localStorage.getItem(LANG_KEY);
+    if (saved === 'pt' || saved === 'en' || saved === 'es') return saved;
+  } catch {
+    /* localStorage indisponível */
   }
+  return 'pt';
+}
+
+const normalize = (text: string) =>
+  text.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+
+export default function App() {
+  const [lang, setLang] = useState<Language>(readLang);
+  const [view, setView] = useState<View>(readView);
+
+  // Navegação por #hash: o botão "voltar" do telemóvel funciona e cada secção tem link próprio.
+  useEffect(() => {
+    const onHash = () => {
+      setView(readView());
+      window.scrollTo(0, 0);
+    };
+    window.addEventListener('hashchange', onHash);
+    return () => window.removeEventListener('hashchange', onHash);
+  }, []);
+
+  useEffect(() => {
+    document.documentElement.lang = lang === 'pt' ? 'pt-PT' : lang;
+    try {
+      localStorage.setItem(LANG_KEY, lang);
+    } catch {
+      /* ignorar */
+    }
+  }, [lang]);
+
+  // Limpa a cópia local de dados de subscritores que a versão antiga guardava no browser dos visitantes.
+  useEffect(() => {
+    try {
+      localStorage.removeItem('alhorno_subscribers');
+    } catch {
+      /* ignorar */
+    }
+  }, []);
+
+  useEffect(() => {
+    const titles: Record<View, string> = {
+      home: "Al'Horno Empanadas — Aldeia da Praia",
+      empanadas: `${UI_TEXT.sections.empanadas[lang]} · Al'Horno`,
+      drinks: `${UI_TEXT.sections.drinks[lang]} · Al'Horno`,
+      menus: `${UI_TEXT.sections.menus[lang]} · Al'Horno`,
+    };
+    document.title = titles[view];
+  }, [view, lang]);
 
   return (
-    <div className="min-h-screen bg-[#FAF7F2] pb-24 text-[#2D1F1B] font-sans antialiased selection:bg-[#542216]/15">
-      {/* Authentic Header com Branding dos Menus Físicos */}
-      <header className="sticky top-0 z-40 bg-[#FAF7F2]/95 backdrop-blur-md border-b border-[#E8DFD3] px-4 py-3 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          {view !== 'home' ? (
-            <button 
-              onClick={goBack}
-              className="p-2 -ml-2 rounded-lg hover:bg-[#EFE7DC] text-[#542216] transition-colors"
-              aria-label="Voltar"
-            >
-              <ArrowLeft size={19} strokeWidth={2} />
-            </button>
-          ) : (
-            <div className="w-7 h-7 rounded-full bg-[#542216] text-[#FAF7F2] flex items-center justify-center font-display font-bold text-[10px]">
-              AH
-            </div>
-          )}
-          
-          <button 
-            onClick={() => {
-              navigateTo('home');
-              handleLogoSecretClick();
-            }} 
-            className="flex items-center gap-2 text-left"
-          >
-            <span className="font-display font-semibold text-[#542216] tracking-tight text-base uppercase">
-              Al'Horno
-            </span>
-          </button>
+    <div className="min-h-screen flex flex-col">
+      <Header lang={lang} setLang={setLang} view={view} />
+
+      <main id="conteudo" tabIndex={-1} className="outline-none flex-1 w-full max-w-xl mx-auto px-4 sm:px-6 pt-5 pb-8">
+        <div key={view} className="fade-in">
+          {view === 'home' && <HomeView lang={lang} />}
+          {view === 'empanadas' && <EmpanadasView lang={lang} />}
+          {view === 'drinks' && <DrinksView lang={lang} />}
+          {view === 'menus' && <MenusView lang={lang} />}
         </div>
-
-        <div className="flex items-center gap-1.5">
-          <button 
-            onClick={() => setView('language')}
-            className="px-2.5 py-1 rounded-full border border-[#D9CBB9] hover:bg-[#EFE7DC] transition-colors text-[#542216] flex items-center gap-1.5 text-xs font-medium"
-            title="Mudar Idioma"
-          >
-            <Globe size={13} />
-            <span className="uppercase text-[11px] font-semibold">{lang}</span>
-          </button>
-        </div>
-      </header>
-
-      {/* Main Container */}
-      <main className="px-4 sm:px-6 pt-3.5 max-w-xl mx-auto">
-        <AnimatePresence mode="wait">
-          {/* 1. HOME VIEW */}
-          {view === 'home' && (
-            <motion.div
-              key="home"
-              initial={{ opacity: 0, y: 5 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -5 }}
-              className="space-y-3.5 py-1"
-            >
-              {/* BRAND BANNER / IDENTITY HEADER */}
-              <div className="text-center py-2 relative">
-                <div className="flex items-center justify-center gap-2.5">
-                  <div className="h-px w-8 bg-[#542216]/25"></div>
-                  <div className="w-16 h-10 flex items-center justify-center">
-                    <img 
-                      src="/logo.png" 
-                      alt="Al'Horno" 
-                      className="max-h-full object-contain"
-                      onError={(e) => {
-                        const target = e.target as HTMLImageElement;
-                        if (!target.src.includes('logo.png.png')) {
-                          target.src = "/logo.png.png";
-                        }
-                      }}
-                    />
-                  </div>
-                  <div className="h-px w-8 bg-[#542216]/25"></div>
-                </div>
-              </div>
-
-              {/* UBER EATS CARD (Official Branded Colors & Clear Contrast) */}
-              <a 
-                href={UBER_EATS_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="p-3 rounded-xl bg-[#06C167] text-[#000000] flex items-center justify-between gap-3 shadow-xs hover:opacity-95 transition-opacity group"
-              >
-                <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-lg bg-black text-white flex items-center justify-center shrink-0 font-display font-bold text-[11px]">
-                    Uber
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-[9px] font-bold uppercase tracking-wider bg-black text-[#06C167] px-1.5 py-0.2 rounded">
-                        {UI_TEXT.ubereats.badge[lang]}
-                      </span>
-                      <span className="text-xs font-bold text-black">
-                        {UI_TEXT.ubereats.title[lang]}
-                      </span>
-                    </div>
-                    <p className="text-[11px] font-normal text-black/85">
-                      {UI_TEXT.ubereats.subtitle[lang]}
-                    </p>
-                  </div>
-                </div>
-                <div className="p-1.5 rounded-lg bg-black text-[#06C167] group-hover:translate-x-0.5 transition-transform shrink-0">
-                  <ExternalLink size={13} />
-                </div>
-              </a>
-
-              {/* Menu Navigation Cards - Aligned with Physical Menu Design */}
-              <div className="space-y-2 pt-1">
-                <MenuNavigationCard 
-                  title={UI_TEXT.sections.empanadas[lang]} 
-                  description="19 variedades autênticas: 10 Clássicas e 9 Premium, com opções de carne, queijo e vegetarianas."
-                  icon={<Flame size={17} className="text-[#542216]" />}
-                  badge="19 Variedades"
-                  onClick={() => navigateTo('empanadas')} 
-                />
-                <MenuNavigationCard 
-                  title={UI_TEXT.sections.drinks[lang]} 
-                  description="Águas, sumos frescos, refrigerantes, cervejas e seleção da carta de vinhos."
-                  icon={<Beer size={17} className="text-[#542216]" />}
-                  onClick={() => navigateTo('drinks')} 
-                />
-                <MenuNavigationCard 
-                  title={UI_TEXT.sections.menus[lang]} 
-                  description="Combos de 3, 6 e 12 empanadas com bebidas para partilhar."
-                  icon={<Utensils size={17} className="text-[#542216]" />}
-                  onClick={() => navigateTo('menus')} 
-                />
-              </div>
-
-              {/* CARD: FESTAS & EVENTOS (Refined, Natural & Elegant Portuguese Copy) */}
-              <div className="p-4 rounded-xl bg-white border border-[#E8DFD3] space-y-2.5 shadow-2xs relative overflow-hidden">
-                <div className="flex items-center gap-2">
-                  <span className="p-1 rounded-md bg-[#542216]/10 text-[#542216]">
-                    <PartyPopper size={15} />
-                  </span>
-                  <h3 className="font-display font-semibold text-sm text-[#542216]">
-                    {UI_TEXT.events.title[lang]}
-                  </h3>
-                </div>
-
-                <p className="text-xs text-[#542216]/85 leading-relaxed font-normal">
-                  {UI_TEXT.events.text[lang]}
-                </p>
-
-                <div className="flex flex-wrap items-center gap-2 pt-1">
-                  <a
-                    href={`mailto:${UI_TEXT.events.email}?subject=Empanadas%20Al'Horno%20para%20Festa/Evento`}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#542216] text-[#FAF7F2] text-xs font-medium hover:bg-[#431A11] transition-colors"
-                  >
-                    <Mail size={13} />
-                    <span>{UI_TEXT.events.email}</span>
-                  </a>
-                  <button
-                    onClick={handleCopyEventsEmail}
-                    className="px-2.5 py-1.5 rounded-lg bg-[#F5ECD7] text-[#542216] hover:bg-[#EFE2C5] text-xs font-medium flex items-center gap-1 transition-colors"
-                    title="Copiar E-mail"
-                  >
-                    {showEmailCopied ? <Check size={13} className="text-emerald-700" /> : <Copy size={13} />}
-                    <span>{showEmailCopied ? 'Copiado!' : 'Copiar'}</span>
-                  </button>
-                </div>
-              </div>
-
-              {/* Compact Quick Icons at Bottom of Main Menu (Instagram & Google Maps) */}
-              <div className="flex items-center justify-center gap-3 pt-2">
-                <a
-                  href="https://www.instagram.com/al.horno_pt/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label="Instagram @al.horno_pt"
-                  className="flex items-center gap-2 px-3.5 py-2 rounded-full bg-white border border-[#E8DFD3] text-[#2D1F1B] hover:border-[#542216] hover:bg-[#FAF7F2] transition-all text-xs shadow-2xs group"
-                >
-                  <Instagram size={16} className="text-[#E1306C] group-hover:scale-110 transition-transform" />
-                  <span className="font-medium text-[11px]">Instagram</span>
-                </a>
-
-                <a
-                  href="https://maps.app.goo.gl/6ubZDrxZgMDRBUGL7"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label="Google Maps Aldeia da Praia"
-                  className="flex items-center gap-2 px-3.5 py-2 rounded-full bg-white border border-[#E8DFD3] text-[#2D1F1B] hover:border-[#542216] hover:bg-[#FAF7F2] transition-all text-xs shadow-2xs group"
-                >
-                  <MapPin size={16} className="text-[#E85D04] group-hover:scale-110 transition-transform" />
-                  <span className="font-medium text-[11px]">Aldeia da Praia</span>
-                </a>
-              </div>
-            </motion.div>
-          )}
-
-          {/* 2. EMPANADAS VIEW */}
-          {view === 'empanadas' && (
-            <motion.div
-              key="empanadas"
-              initial={{ opacity: 0, x: 10 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -10 }}
-              className="space-y-4"
-            >
-              {/* Header com Estilo da Ementa Física */}
-              <div className="text-center py-1">
-                <div className="inline-block px-5 py-1 rounded-full bg-[#542216] text-[#FAF7F2] font-display font-semibold text-xs tracking-wider uppercase">
-                  {UI_TEXT.sections.empanadas[lang]}
-                </div>
-              </div>
-
-              {/* Category Filter Pills */}
-              <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none text-xs justify-center sm:justify-start">
-                <button
-                  onClick={() => setEmpanadaFilter('all')}
-                  className={cn(
-                    "px-3 py-1 rounded-full font-medium transition-all whitespace-nowrap text-xs",
-                    empanadaFilter === 'all' 
-                      ? "bg-[#542216] text-white" 
-                      : "bg-white border border-[#D9CBB9] text-[#6B5B53] hover:border-[#542216]"
-                  )}
-                >
-                  Todas ({EMPANADAS.length})
-                </button>
-                <button
-                  onClick={() => setEmpanadaFilter('classicas')}
-                  className={cn(
-                    "px-3 py-1 rounded-full font-medium transition-all whitespace-nowrap text-xs",
-                    empanadaFilter === 'classicas' 
-                      ? "bg-[#542216] text-white" 
-                      : "bg-white border border-[#D9CBB9] text-[#6B5B53] hover:border-[#542216]"
-                  )}
-                >
-                  Clássicas
-                </button>
-                <button
-                  onClick={() => setEmpanadaFilter('premium')}
-                  className={cn(
-                    "px-3 py-1 rounded-full font-medium transition-all whitespace-nowrap text-xs",
-                    empanadaFilter === 'premium' 
-                      ? "bg-[#542216] text-white" 
-                      : "bg-white border border-[#D9CBB9] text-[#6B5B53] hover:border-[#542216]"
-                  )}
-                >
-                  Premium
-                </button>
-                <button
-                  onClick={() => setEmpanadaFilter('veg')}
-                  className={cn(
-                    "px-3 py-1 rounded-full font-medium transition-all whitespace-nowrap text-xs",
-                    empanadaFilter === 'veg' 
-                      ? "bg-[#542216] text-white" 
-                      : "bg-white border border-[#D9CBB9] text-[#6B5B53] hover:border-[#542216]"
-                  )}
-                >
-                  Vegetarianas 🥬
-                </button>
-              </div>
-
-              {/* Empanadas List - Crisp Light Font & Clean Framing */}
-              <div className="space-y-2.5">
-                {displayedEmpanadas.map((emp) => (
-                  <div
-                    key={emp.code}
-                    className="p-3.5 rounded-xl bg-white border border-[#E8DFD3] hover:border-[#542216]/40 transition-colors space-y-1.5"
-                  >
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-2">
-                        <span className="w-7 h-6 rounded-full bg-[#F5ECD7] text-[#542216] flex items-center justify-center font-bold text-[11px] font-mono shrink-0">
-                          {emp.code}
-                        </span>
-                        <h3 className="font-display font-semibold text-sm text-[#2D1F1B]">
-                          {emp.name[lang]}
-                        </h3>
-                        {emp.spicy && <span title="Picante" className="text-xs">🌶️</span>}
-                        {emp.vegetarian && <span title="Vegetariana" className="text-xs">🥬</span>}
-                      </div>
-
-                      {emp.premium && (
-                        <div className="flex items-center shrink-0">
-                          <span className="text-[10px] font-semibold text-[#542216] bg-[#F5ECD7] px-2 py-0.5 rounded-full">
-                            Premium
-                          </span>
-                        </div>
-                      )}
-                    </div>
-
-                    <p className="text-xs text-[#5C4D46] leading-relaxed pl-9 font-normal">
-                      {emp.description[lang]}
-                    </p>
-
-                    <div className="pl-9 flex items-center gap-1.5 pt-0.5 text-[10px] text-[#8C7B71]">
-                      <span className="font-medium">Alergénios:</span>
-                      {emp.allergens.map(a => (
-                        <span key={a} className="bg-[#FAF7F2] border border-[#E8DFD3] px-1.5 py-0.2 rounded font-mono font-semibold text-[#542216]">
-                          {a}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* EXTRA: Molho Chimichurri Artesanal */}
-              <div className="pt-1">
-                <div className="p-4 rounded-xl bg-[#FBF9F5] border-2 border-[#542216] space-y-2">
-                  <div className="flex items-center gap-2 text-xs font-semibold text-[#542216] uppercase tracking-wider">
-                    <Leaf size={14} />
-                    <span>{UI_TEXT.extrasTitle[lang]}</span>
-                  </div>
-
-                  {EXTRAS.map((extra) => (
-                    <div key={extra.id} className="space-y-0.5">
-                      <h4 className="font-display font-semibold text-sm text-[#2D1F1B]">
-                        {extra.name[lang]}
-                      </h4>
-                      <p className="text-xs text-[#5C4D46] leading-relaxed font-normal">
-                        {extra.description[lang]}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Alergénios Legenda */}
-              <div className="p-3.5 rounded-xl bg-white border border-[#E8DFD3] space-y-2 text-xs">
-                <div className="flex items-center gap-1.5 font-semibold text-[#542216] uppercase text-[11px]">
-                  <Info size={13} />
-                  <span>Legenda de Alergénios</span>
-                </div>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 text-[11px] text-[#6B5B53] font-normal">
-                  {ALLERGENS.map(a => (
-                    <div key={a.code} className="flex items-center gap-1.5">
-                      <span className="font-semibold font-mono text-[#542216] bg-[#F5ECD7] px-1 rounded text-[10px]">
-                        {a.code}
-                      </span>
-                      <span>{a.name[lang]}</span>
-                    </div>
-                  ))}
-                </div>
-                <p className="text-[10px] text-[#8C7B71] pt-1 border-t border-[#E8DFD3] leading-relaxed">
-                  {UI_TEXT.allergenWarning[lang]}
-                </p>
-              </div>
-            </motion.div>
-          )}
-
-          {/* 3. DRINKS VIEW (Exact match to physical menus) */}
-          {view === 'drinks' && (
-            <motion.div
-              key="drinks"
-              initial={{ opacity: 0, x: 10 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -10 }}
-              className="space-y-4"
-            >
-              <div className="text-center space-y-1 py-1">
-                <div className="inline-block px-5 py-1 rounded-full bg-[#542216] text-[#FAF7F2] font-display font-semibold text-xs tracking-wider uppercase">
-                  {UI_TEXT.sections.drinks[lang]}
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                {DRINKS.map((category, idx) => (
-                  <div key={idx} className="space-y-2">
-                    <h3 className="font-display font-semibold text-xs uppercase tracking-wider text-[#542216] px-1">
-                      {category.title[lang]}
-                    </h3>
-
-                    <div className="grid grid-cols-1 gap-1.5">
-                      {category.items.map((drink) => (
-                        <div 
-                          key={drink.id}
-                          className="p-3 rounded-xl bg-white border border-[#E8DFD3] flex items-center justify-between text-xs font-medium text-[#2D1F1B]"
-                        >
-                          <span>{drink.name[lang]}</span>
-                          {drink.premium && (
-                            <span className="text-[10px] text-[#542216] bg-[#F5ECD7] px-2 py-0.5 rounded-full font-normal">
-                              Especial
-                            </span>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-
-                {/* NOTA DE CARTA DE VINHOS */}
-                <div className="p-4 rounded-xl bg-[#FBF9F5] border border-[#D9CBB9] space-y-1.5">
-                  <div className="flex items-center gap-2 text-xs font-semibold text-[#542216] uppercase tracking-wide">
-                    <Wine size={15} />
-                    <span>{UI_TEXT.wineNote.title[lang]}</span>
-                  </div>
-                  <p className="text-xs text-[#5C4D46] leading-relaxed font-normal">
-                    {UI_TEXT.wineNote.description[lang]}
-                  </p>
-                </div>
-              </div>
-            </motion.div>
-          )}
-
-          {/* 4. MENUS VIEW */}
-          {view === 'menus' && (
-            <motion.div
-              key="menus"
-              initial={{ opacity: 0, x: 10 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -10 }}
-              className="space-y-4"
-            >
-              <div className="text-center space-y-1 py-1">
-                <div className="inline-block px-5 py-1 rounded-full bg-[#542216] text-[#FAF7F2] font-display font-semibold text-xs tracking-wider uppercase">
-                  {UI_TEXT.sections.menus[lang]}
-                </div>
-                <p className="text-xs text-[#6B5B53] font-normal pt-1">
-                  Combinações ideais para refeições individuais ou partilha.
-                </p>
-              </div>
-
-              <div className="space-y-2.5">
-                {MENUS.map((menu) => (
-                  <div 
-                    key={menu.id}
-                    className="p-4 rounded-xl bg-white border border-[#E8DFD3] space-y-1"
-                  >
-                    <h3 className="font-display font-semibold text-sm text-[#2D1F1B]">
-                      {menu.title[lang]}
-                    </h3>
-                    <p className="text-xs text-[#5C4D46] font-normal">
-                      {menu.details[lang]}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
       </main>
 
-      {/* Minimalist Bottom Navigation Bar */}
-      {view !== 'language' && (
-        <nav className="fixed bottom-0 left-0 right-0 z-30 bg-[#FAF7F2]/95 backdrop-blur-md border-t border-[#E8DFD3] px-4 py-2">
-          <div className="max-w-md mx-auto flex items-center justify-around">
-            <MinimalNavIcon 
-              icon={<Flame size={17} />} 
-              active={view === 'empanadas'} 
-              label="Empanadas" 
-              onClick={() => navigateTo('empanadas')} 
-            />
-            <MinimalNavIcon 
-              icon={<Beer size={17} />} 
-              active={view === 'drinks'} 
-              label="Bebidas" 
-              onClick={() => navigateTo('drinks')} 
-            />
-            <MinimalNavIcon 
-              icon={<Utensils size={17} />} 
-              active={view === 'menus'} 
-              label="Menus" 
-              onClick={() => navigateTo('menus')} 
-            />
-          </div>
-        </nav>
-      )}
-
-      {/* Admin Subscritores Modal (PIN Protected & Hidden from Visitors) */}
-      <AnimatePresence>
-        {showAdminModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-white rounded-2xl p-5 max-w-md w-full max-h-[85vh] flex flex-col shadow-xl border border-[#E8DFD3]"
-            >
-              <div className="flex items-center justify-between pb-3 border-b border-[#E8DFD3]">
-                <div className="flex items-center gap-2">
-                  <Key size={16} className="text-[#542216]" />
-                  <h3 className="font-display font-semibold text-sm text-[#2D1F1B]">Área de Gestão Interna</h3>
-                </div>
-                <button 
-                  onClick={() => {
-                    setShowAdminModal(false);
-                    setIsAdminAuthenticated(false);
-                    setAdminPin('');
-                    setPinError('');
-                  }}
-                  className="p-1 rounded-md hover:bg-[#FAF7F2] text-[#8C7B71]"
-                >
-                  <X size={18} />
-                </button>
-              </div>
-
-              {!isAdminAuthenticated ? (
-                <form onSubmit={handleAdminAuth} className="py-6 space-y-4">
-                  <div className="text-center space-y-1">
-                    <p className="text-xs text-[#6B5B53] font-normal">
-                      Introduza a palavra-passe ou PIN para aceder à lista de subscritores:
-                    </p>
-                  </div>
-
-                  <div className="space-y-1.5 max-w-xs mx-auto">
-                    <input
-                      type="password"
-                      placeholder="PIN / Palavra-passe"
-                      value={adminPin}
-                      onChange={(e) => {
-                        setAdminPin(e.target.value);
-                        setPinError('');
-                      }}
-                      className="w-full px-3 py-2 text-center text-sm rounded-lg border border-[#D9CBB9] focus:outline-none focus:border-[#542216]"
-                      autoFocus
-                    />
-                    {pinError && (
-                      <p className="text-xs text-red-600 text-center font-medium">{pinError}</p>
-                    )}
-                  </div>
-
-                  <div className="flex justify-center pt-1">
-                    <button
-                      type="submit"
-                      className="px-6 py-2 rounded-lg bg-[#542216] text-white text-xs font-semibold uppercase tracking-wider hover:bg-[#431A11] transition-colors"
-                    >
-                      Aceder
-                    </button>
-                  </div>
-                </form>
-              ) : (
-                <>
-                  <div className="py-2 border-b border-[#E8DFD3] flex items-center justify-between text-xs">
-                    <span className="font-semibold text-[#2D1F1B]">Subscritores Registados</span>
-                    <span className="text-[11px] text-[#542216] bg-[#F5ECD7] px-2 py-0.5 rounded-full font-medium">
-                      {subscribers.length} contactos
-                    </span>
-                  </div>
-
-                  <div className="py-3 flex-grow overflow-y-auto space-y-2 max-h-[50vh]">
-                    {subscribers.length === 0 ? (
-                      <p className="text-xs text-center text-[#8C7B71] py-6 font-normal">Sem subscritores registados.</p>
-                    ) : (
-                      subscribers.map((s, idx) => (
-                        <div key={s.id || idx} className="p-2.5 rounded-lg bg-[#FAF7F2] border border-[#E8DFD3] text-xs flex justify-between items-center">
-                          <div>
-                            <p className="font-semibold text-[#2D1F1B]">{s.name}</p>
-                            <p className="text-[10px] text-[#6B5B53] font-mono">{s.email}</p>
-                            {s.phone && <p className="text-[10px] text-[#542216] font-mono">{s.phone}</p>}
-                          </div>
-                          <span className="text-[10px] font-mono text-[#8C7B71]">
-                            {new Date(s.createdAt).toLocaleDateString('pt-PT')}
-                          </span>
-                        </div>
-                      ))
-                    )}
-                  </div>
-
-                  <div className="pt-3 border-t border-[#E8DFD3] flex gap-2">
-                    <button
-                      onClick={handleExportCSV}
-                      disabled={subscribers.length === 0}
-                      className="w-full py-2 rounded-lg bg-[#542216] text-white font-medium text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 disabled:opacity-50 hover:bg-[#431A11] transition-colors"
-                    >
-                      <Download size={13} />
-                      Exportar CSV
-                    </button>
-                  </div>
-                </>
-              )}
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+      <Footer lang={lang} />
+      <BottomNav lang={lang} view={view} />
     </div>
   );
 }
 
-function LanguageButton({ onClick, flag, label }: { onClick: () => void, flag: string, label: string }) {
+/* ---------------------------------- Header --------------------------------- */
+
+function Header({ lang, setLang, view }: { lang: Language; setLang: (l: Language) => void; view: View }) {
   return (
-    <button 
-      onClick={onClick} 
-      className="w-full bg-white text-[#2D1F1B] border border-[#D9CBB9] p-3 rounded-xl font-medium text-sm flex items-center justify-between hover:border-[#542216] transition-colors"
-    >
-      <div className="flex items-center gap-2.5">
-        <span>{flag}</span>
-        <span>{label}</span>
+    <header className="on-dark sticky top-0 z-40 bg-bordeaux text-creme shadow-md">
+      <a
+        href="#conteudo"
+        className="sr-only focus:not-sr-only focus:absolute focus:left-2 focus:top-2 focus:z-50 focus:bg-mostarda focus:text-preto focus:px-3 focus:py-2 focus:rounded-lg"
+        onClick={(e) => {
+          e.preventDefault();
+          document.getElementById('conteudo')?.focus();
+          document.getElementById('conteudo')?.scrollIntoView();
+        }}
+      >
+        {UI_TEXT.nav.skip[lang]}
+      </a>
+      <div className="max-w-xl mx-auto px-3 sm:px-6 h-16 flex items-center justify-between gap-2">
+        <div className="flex items-center gap-1 min-w-0">
+          {view !== 'home' && (
+            <a
+              href="#"
+              className="w-11 h-11 -ml-1 flex items-center justify-center rounded-lg hover:bg-white/10 transition-colors"
+              aria-label={UI_TEXT.nav.back[lang]}
+            >
+              <ArrowLeft size={22} aria-hidden="true" />
+            </a>
+          )}
+          <a href="#" className="flex flex-col leading-none px-1 py-1 rounded-lg">
+            <span className="font-display font-bold text-xl tracking-tight text-creme">Al'Horno</span>
+            <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-mostarda mt-0.5">
+              Empanadas
+            </span>
+          </a>
+        </div>
+
+        <div role="group" aria-label={UI_TEXT.languageLabel[lang]} className="flex items-center rounded-full bg-bordeaux-dark p-1">
+          {LANGS.map((l) => (
+            <button
+              key={l.code}
+              type="button"
+              lang={l.code}
+              onClick={() => setLang(l.code)}
+              aria-pressed={lang === l.code}
+              aria-label={l.name}
+              className={cn(
+                'press min-w-11 h-9 px-2 rounded-full text-sm font-semibold',
+                lang === l.code ? 'bg-mostarda text-preto' : 'text-creme hover:bg-white/10',
+              )}
+            >
+              {l.label}
+            </button>
+          ))}
+        </div>
       </div>
-      <ArrowRight size={14} className="text-[#8C7B71]" />
-    </button>
+    </header>
   );
 }
 
-function MenuNavigationCard({ 
-  title, 
-  description,
+/* ----------------------------------- Home ---------------------------------- */
+
+function HomeView({ lang }: { lang: Language }) {
+  return (
+    <div className="space-y-5 stagger">
+      <section className="text-center space-y-3 pt-1">
+        <h1 className="sr-only">Al'Horno Empanadas — {CONTACT.locality}</h1>
+        <picture>
+          <source srcSet="/logo.webp" type="image/webp" />
+          <img
+            src="/logo.png"
+            alt="Al'Horno Empanadas"
+            width={240}
+            height={136}
+            className="mx-auto w-32 sm:w-36 h-auto"
+            fetchPriority="high"
+          />
+        </picture>
+        <p className="font-display text-lg font-medium text-bordeaux">
+          {UI_TEXT.tagline[lang]} · {CONTACT.locality}
+        </p>
+        <ClosedBadge lang={lang} />
+      </section>
+
+      {/* Uber Eats */}
+      <a
+        href={CONTACT.uberEatsUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="press on-dark flex items-center gap-4 p-4 rounded-2xl bg-preto text-creme shadow-md hover:bg-black transition-colors group"
+      >
+        <span className="w-12 h-12 rounded-xl bg-mostarda text-preto flex items-center justify-center shrink-0">
+          <ShoppingBag size={24} aria-hidden="true" />
+        </span>
+        <span className="flex-1 min-w-0">
+          <span className="block font-display font-semibold text-lg text-mostarda">{UI_TEXT.ubereats.title[lang]}</span>
+          <span className="block text-sm text-creme/90">{UI_TEXT.ubereats.subtitle[lang]}</span>
+        </span>
+        <ExternalLink size={20} className="shrink-0 text-mostarda" aria-hidden="true" />
+        <span className="sr-only">{UI_TEXT.nav.newWindow[lang]}</span>
+      </a>
+
+      {/* Secções do menu */}
+      <nav aria-label={UI_TEXT.nav.main[lang]} className="space-y-3 stagger">
+        <SectionCard
+          href="#empanadas"
+          icon={<Flame size={22} aria-hidden="true" />}
+          title={UI_TEXT.sections.empanadas[lang]}
+          badge={UI_TEXT.home.varieties(EMPANADAS.length)[lang]}
+          description={UI_TEXT.home.empanadasDesc(CLASSIC_COUNT, PREMIUM_COUNT)[lang]}
+        />
+        <SectionCard
+          href="#drinks"
+          icon={<Beer size={22} aria-hidden="true" />}
+          title={UI_TEXT.sections.drinks[lang]}
+          description={UI_TEXT.home.drinksDesc[lang]}
+        />
+        <SectionCard
+          href="#menus"
+          icon={<Utensils size={22} aria-hidden="true" />}
+          title={UI_TEXT.sections.menus[lang]}
+          description={UI_TEXT.home.menusDesc[lang]}
+        />
+      </nav>
+
+      <EventsCard lang={lang} />
+    </div>
+  );
+}
+
+function ClosedBadge({ lang }: { lang: Language }) {
+  return (
+    <p className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-bordeaux text-creme text-sm font-semibold">
+      <Clock size={16} className="text-mostarda" aria-hidden="true" />
+      {UI_TEXT.closed.short[lang]}
+    </p>
+  );
+}
+
+function SectionCard({
+  href,
   icon,
+  title,
+  description,
   badge,
-  onClick
-}: { 
-  title: string, 
-  description?: string,
-  icon?: React.ReactNode,
-  badge?: string,
-  onClick: () => void
+}: {
+  href: string;
+  icon: React.ReactNode;
+  title: string;
+  description: string;
+  badge?: string;
 }) {
   return (
-    <button 
-      onClick={onClick}
-      className="w-full p-3.5 rounded-xl bg-white border border-[#E8DFD3] hover:border-[#542216] flex items-center justify-between text-left transition-all group shadow-2xs"
+    <a
+      href={href}
+      className="press flex items-center gap-4 p-4 rounded-2xl bg-cartao border border-areia hover:border-bordeaux group"
     >
-      <div className="space-y-0.5 pr-2">
-        <div className="flex items-center gap-2">
-          {icon}
-          <span className="font-display font-semibold text-sm text-[#2D1F1B] block">{title}</span>
+      <span className="w-11 h-11 rounded-xl bg-areia text-bordeaux flex items-center justify-center shrink-0">{icon}</span>
+      <span className="flex-1 min-w-0">
+        <span className="flex flex-wrap items-center gap-2">
+          <span className="font-display font-semibold text-lg text-bordeaux">{title}</span>
           {badge && (
-            <span className="text-[9px] font-semibold text-[#542216] bg-[#F5ECD7] px-1.5 py-0.2 rounded-full uppercase tracking-wider">
-              {badge}
-            </span>
+            <span className="text-xs font-semibold text-preto bg-areia px-2 py-0.5 rounded-full">{badge}</span>
           )}
+        </span>
+        <span className="block text-sm text-azeitona leading-snug mt-0.5">{description}</span>
+      </span>
+      <ArrowRight
+        size={20}
+        className="shrink-0 text-bordeaux group-hover:translate-x-0.5 transition-transform"
+        aria-hidden="true"
+      />
+    </a>
+  );
+}
+
+function EventsCard({ lang }: { lang: Language }) {
+  const [copied, setCopied] = useState(false);
+  const mailto = `mailto:${CONTACT.email}?subject=${encodeURIComponent(UI_TEXT.events.subject[lang])}&body=${encodeURIComponent(UI_TEXT.events.body[lang])}`;
+
+  const copyEmail = async () => {
+    try {
+      await navigator.clipboard.writeText(CONTACT.email);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      window.prompt('E-mail:', CONTACT.email);
+    }
+  };
+
+  return (
+    <section aria-labelledby="eventos-titulo" className="on-dark relative overflow-hidden rounded-2xl bg-bordeaux text-creme">
+      <div className="p-5 space-y-3">
+        <div className="flex items-center gap-2.5">
+          <PartyPopper size={22} className="text-mostarda" aria-hidden="true" />
+          <h2 id="eventos-titulo" className="font-display font-semibold text-xl">
+            {UI_TEXT.events.title[lang]}
+          </h2>
         </div>
-        {description && (
-          <p className="text-[11px] text-[#6B5B53] font-normal leading-relaxed line-clamp-1 pl-6">
-            {description}
-          </p>
+        <p className="text-base leading-relaxed text-creme/95">{UI_TEXT.events.text[lang]}</p>
+        <div className="flex flex-wrap items-center gap-2 pt-1">
+          <a
+            href={mailto}
+            className="press inline-flex items-center gap-2 min-h-12 px-5 rounded-xl bg-mostarda text-preto font-semibold hover:bg-areia transition-colors"
+          >
+            <Mail size={18} aria-hidden="true" />
+            {UI_TEXT.events.cta[lang]}
+          </a>
+          <button
+            type="button"
+            onClick={copyEmail}
+            className="press inline-flex items-center gap-2 min-h-12 px-4 rounded-xl border border-creme/40 text-creme text-sm font-medium hover:bg-white/10 transition-colors"
+          >
+            {copied ? <Check size={16} aria-hidden="true" /> : <Copy size={16} aria-hidden="true" />}
+            <span>{copied ? UI_TEXT.events.copied[lang] : CONTACT.email}</span>
+          </button>
+          <span className="sr-only" aria-live="polite">
+            {copied ? UI_TEXT.events.copied[lang] : ''}
+          </span>
+        </div>
+      </div>
+      <div className="h-3 checkered" aria-hidden="true" />
+    </section>
+  );
+}
+
+/* --------------------------------- Empanadas -------------------------------- */
+
+function EmpanadasView({ lang }: { lang: Language }) {
+  const [filter, setFilter] = useState<Filter>('all');
+  const [search, setSearch] = useState('');
+
+  const list = useMemo(() => {
+    const term = normalize(search.trim());
+    return EMPANADAS.filter((e) => {
+      if (filter === 'classicas' && e.premium) return false;
+      if (filter === 'premium' && !e.premium) return false;
+      if (filter === 'veg' && !e.vegetarian) return false;
+      if (term && !normalize(e.name[lang]).includes(term)) return false;
+      return true;
+    });
+  }, [filter, search, lang]);
+
+  const filters: { id: Filter; label: string }[] = [
+    { id: 'all', label: `${UI_TEXT.filters.all[lang]} (${EMPANADAS.length})` },
+    { id: 'classicas', label: UI_TEXT.filters.classicas[lang] },
+    { id: 'premium', label: UI_TEXT.filters.premium[lang] },
+    { id: 'veg', label: `🥬 ${UI_TEXT.filters.veg[lang]}` },
+  ];
+
+  return (
+    <div className="space-y-4">
+      <PageTitle title={UI_TEXT.sections.empanadas[lang]} subtitle={UI_TEXT.prepNote[lang]} />
+
+      <div className="relative">
+        <label htmlFor="pesquisa" className="sr-only">
+          {UI_TEXT.search.label[lang]}
+        </label>
+        <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-azeitona pointer-events-none" aria-hidden="true" />
+        <input
+          id="pesquisa"
+          type="search"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder={UI_TEXT.search.placeholder[lang]}
+          className="w-full h-12 pl-11 pr-12 rounded-xl bg-cartao border border-areia text-base text-preto placeholder:text-azeitona focus:border-bordeaux [&::-webkit-search-cancel-button]:hidden"
+        />
+        {search && (
+          <button
+            type="button"
+            onClick={() => setSearch('')}
+            aria-label={UI_TEXT.search.clear[lang]}
+            className="absolute right-1 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center rounded-lg text-azeitona hover:text-bordeaux"
+          >
+            <X size={18} aria-hidden="true" />
+          </button>
         )}
       </div>
-      <ArrowRight size={14} className="text-[#8C7B71] group-hover:text-[#542216] group-hover:translate-x-0.5 transition-all shrink-0 ml-1" />
-    </button>
+
+      <div role="group" aria-label={UI_TEXT.filters.label[lang]} className="flex gap-2 overflow-x-auto scrollbar-none -mx-4 px-4 sm:mx-0 sm:px-0">
+        {filters.map((f) => (
+          <button
+            key={f.id}
+            type="button"
+            onClick={() => setFilter(f.id)}
+            aria-pressed={filter === f.id}
+            className={cn(
+              'press h-10 px-4 rounded-full text-sm font-semibold whitespace-nowrap border',
+              filter === f.id
+                ? 'bg-bordeaux border-bordeaux text-creme'
+                : 'bg-cartao border-areia text-preto hover:border-bordeaux',
+            )}
+          >
+            {f.label}
+          </button>
+        ))}
+      </div>
+
+      <p className="sr-only" aria-live="polite">
+        {UI_TEXT.results(list.length)[lang]}
+      </p>
+
+      {list.length === 0 ? (
+        <div className="p-6 rounded-2xl bg-cartao border border-areia text-center space-y-3">
+          <p className="text-base">
+            {UI_TEXT.search.noResults[lang]} <strong>“{search.trim()}”</strong>.
+          </p>
+          <button
+            type="button"
+            onClick={() => {
+              setSearch('');
+              setFilter('all');
+            }}
+            className="press min-h-11 px-4 rounded-xl bg-areia text-bordeaux font-semibold hover:bg-mostarda"
+          >
+            {UI_TEXT.search.resetFilters[lang]}
+          </button>
+        </div>
+      ) : (
+        <ul key={filter} className="space-y-3 stagger">
+          {list.map((emp) => (
+            <li key={emp.code} className="p-4 rounded-2xl bg-cartao border border-areia space-y-2">
+              <div className="flex items-start gap-3">
+                <span
+                  className="min-w-10 h-8 px-1.5 rounded-lg bg-bordeaux text-mostarda flex items-center justify-center font-bold text-sm shrink-0"
+                  aria-hidden="true"
+                >
+                  {emp.code}
+                </span>
+                <div className="flex-1 min-w-0 space-y-1.5">
+                  <h3 className="font-display font-semibold text-lg leading-tight text-preto">{emp.name[lang]}</h3>
+                  {(emp.premium || emp.spicy || emp.vegetarian) && (
+                    <div className="flex flex-wrap gap-1.5">
+                      {emp.premium && <Tag className="bg-mostarda text-preto">★ {UI_TEXT.tags.premium[lang]}</Tag>}
+                      {emp.spicy && <Tag className="bg-bordeaux text-creme">🌶️ {UI_TEXT.tags.spicy[lang]}</Tag>}
+                      {emp.vegetarian && <Tag className="bg-azeitona text-creme">🥬 {UI_TEXT.tags.veg[lang]}</Tag>}
+                    </div>
+                  )}
+                  <p className="text-[15px] leading-relaxed text-preto/85">{emp.description[lang]}</p>
+                  <p className="flex flex-wrap items-center gap-1.5 text-sm text-azeitona pt-0.5">
+                    <span className="font-medium">{UI_TEXT.allergensLabel[lang]}:</span>
+                    {emp.allergens.map((code) => {
+                      const name = ALLERGENS.find((a) => a.code === code)?.name[lang] ?? code;
+                      return (
+                        <abbr
+                          key={code}
+                          title={name}
+                          className="no-underline px-1.5 rounded bg-areia text-bordeaux font-semibold text-xs leading-5"
+                        >
+                          {code}
+                          <span className="sr-only"> ({name})</span>
+                        </abbr>
+                      );
+                    })}
+                  </p>
+                </div>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {/* Molhos & extras */}
+      <section className="p-5 rounded-2xl bg-areia space-y-2" aria-labelledby="extras-titulo">
+        <h2 id="extras-titulo" className="flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-bordeaux">
+          <Leaf size={18} aria-hidden="true" />
+          {UI_TEXT.extrasTitle[lang]}
+        </h2>
+        {EXTRAS.map((extra) => (
+          <div key={extra.id} className="space-y-1">
+            <h3 className="font-display font-semibold text-lg text-preto">{extra.name[lang]}</h3>
+            <p className="text-[15px] leading-relaxed text-preto/85">{extra.description[lang]}</p>
+          </div>
+        ))}
+      </section>
+
+      {/* Legenda de alergénios */}
+      <section className="p-5 rounded-2xl bg-cartao border border-areia space-y-3" aria-labelledby="alergenios-titulo">
+        <h2 id="alergenios-titulo" className="flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-bordeaux">
+          <Info size={18} aria-hidden="true" />
+          {UI_TEXT.allergensLegend[lang]}
+        </h2>
+        <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+          {ALLERGENS.map((a) => (
+            <div key={a.code} className="flex items-center gap-2">
+              <dt className="min-w-7 text-center px-1.5 rounded bg-areia text-bordeaux font-semibold text-xs leading-5">
+                {a.code}
+              </dt>
+              <dd>{a.name[lang]}</dd>
+            </div>
+          ))}
+        </dl>
+        <p className="text-sm text-azeitona leading-relaxed pt-3 border-t border-areia">{UI_TEXT.allergenWarning[lang]}</p>
+      </section>
+    </div>
   );
 }
 
-function MinimalNavIcon({ 
-  icon, 
-  active, 
-  onClick, 
-  label 
-}: { 
-  icon: React.ReactNode, 
-  active: boolean, 
-  onClick: () => void, 
-  label: string 
-}) {
+function Tag({ children, className }: { children: React.ReactNode; className: string }) {
+  return <span className={cn('inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold', className)}>{children}</span>;
+}
+
+function PageTitle({ title, subtitle }: { title: string; subtitle?: string }) {
   return (
-    <button 
-      onClick={onClick}
-      className={cn(
-        "flex flex-col items-center gap-0.5 py-1 px-4 rounded-lg transition-colors",
-        active ? "text-[#542216] font-semibold" : "text-[#8C7B71] hover:text-[#542216]"
-      )}
+    <div className="text-center space-y-1.5">
+      <h1 className="font-display font-bold text-3xl text-bordeaux">{title}</h1>
+      {subtitle && <p className="text-base text-azeitona">{subtitle}</p>}
+    </div>
+  );
+}
+
+/* ---------------------------------- Bebidas -------------------------------- */
+
+function DrinksView({ lang }: { lang: Language }) {
+  return (
+    <div className="space-y-5 stagger">
+      <PageTitle title={UI_TEXT.sections.drinks[lang]} />
+      {DRINKS.map((category) => (
+        <section key={category.title.pt} className="space-y-2">
+          <h2 className="text-sm font-bold uppercase tracking-wider text-bordeaux px-1">{category.title[lang]}</h2>
+          <ul className="rounded-2xl bg-cartao border border-areia divide-y divide-areia">
+            {category.items.map((drink) => (
+              <li key={drink.id} className="px-4 py-3 flex items-center justify-between gap-3 text-base">
+                <span>{drink.name[lang]}</span>
+                {drink.premium && <Tag className="bg-mostarda text-preto shrink-0">{UI_TEXT.tags.special[lang]}</Tag>}
+              </li>
+            ))}
+          </ul>
+        </section>
+      ))}
+
+      <section className="p-5 rounded-2xl bg-areia space-y-1.5" aria-labelledby="vinhos-titulo">
+        <h2 id="vinhos-titulo" className="flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-bordeaux">
+          <Wine size={18} aria-hidden="true" />
+          {UI_TEXT.wineNote.title[lang]}
+        </h2>
+        <p className="text-[15px] leading-relaxed">{UI_TEXT.wineNote.description[lang]}</p>
+      </section>
+    </div>
+  );
+}
+
+/* ----------------------------------- Menus --------------------------------- */
+
+function MenusView({ lang }: { lang: Language }) {
+  return (
+    <div className="space-y-5">
+      <PageTitle title={UI_TEXT.sections.menus[lang]} subtitle={UI_TEXT.menusIntro[lang]} />
+      <ul className="space-y-3 stagger">
+        {MENUS.map((menu) => (
+          <li key={menu.id} className="flex items-center gap-4 p-4 rounded-2xl bg-cartao border border-areia">
+            <span
+              className="w-14 h-14 rounded-xl bg-bordeaux text-mostarda flex items-center justify-center font-display font-bold text-2xl shrink-0"
+              aria-hidden="true"
+            >
+              {menu.capacity}
+            </span>
+            <div>
+              <h2 className="font-display font-semibold text-lg text-preto">{menu.title[lang]}</h2>
+              <p className="text-[15px] text-azeitona">{menu.details[lang]}</p>
+            </div>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+/* ---------------------------------- Rodapé --------------------------------- */
+
+function Footer({ lang }: { lang: Language }) {
+  const linkClass =
+    'flex items-center gap-3 min-h-11 py-1.5 rounded-lg text-creme hover:text-mostarda transition-colors break-all';
+  return (
+    <footer className="on-dark bg-preto text-creme pb-24">
+      <div className="h-3 checkered" aria-hidden="true" />
+      <div className="max-w-xl mx-auto px-4 sm:px-6 py-7 space-y-4">
+        <div>
+          <p className="font-display font-bold text-xl">Al'Horno</p>
+          <p className="text-sm text-areia">
+            {UI_TEXT.footer.rights[lang]} · {CONTACT.locality}
+          </p>
+        </div>
+
+        <p className="flex items-center gap-3 font-semibold text-mostarda">
+          <Clock size={20} aria-hidden="true" />
+          {UI_TEXT.closed.short[lang]}
+        </p>
+
+        <h2 className="sr-only">{UI_TEXT.home.findUs[lang]}</h2>
+        <ul className="space-y-1">
+          <li>
+            <a href={CONTACT.mapsUrl} target="_blank" rel="noopener noreferrer" className={linkClass}>
+              <MapPin size={20} className="text-mostarda shrink-0" aria-hidden="true" />
+              <span>Google Maps — {CONTACT.locality}</span>
+            </a>
+          </li>
+          <li>
+            <a href={CONTACT.instagramUrl} target="_blank" rel="noopener noreferrer" className={linkClass}>
+              <Instagram size={20} className="text-mostarda shrink-0" aria-hidden="true" />
+              <span>Instagram {CONTACT.instagramHandle}</span>
+            </a>
+          </li>
+          <li>
+            <a href={`mailto:${CONTACT.email}`} className={linkClass}>
+              <Mail size={20} className="text-mostarda shrink-0" aria-hidden="true" />
+              <span>{CONTACT.email}</span>
+            </a>
+          </li>
+          <li>
+            <a href={CONTACT.uberEatsUrl} target="_blank" rel="noopener noreferrer" className={linkClass}>
+              <ShoppingBag size={20} className="text-mostarda shrink-0" aria-hidden="true" />
+              <span>Uber Eats — “{CONTACT.uberEatsStore}”</span>
+            </a>
+          </li>
+        </ul>
+
+      </div>
+    </footer>
+  );
+}
+
+/* ------------------------------ Barra inferior ----------------------------- */
+
+function BottomNav({ lang, view }: { lang: Language; view: View }) {
+  const items: { id: View; href: string; label: string; icon: React.ReactNode }[] = [
+    { id: 'home', href: '#', label: UI_TEXT.nav.home[lang], icon: <Home size={22} aria-hidden="true" /> },
+    { id: 'empanadas', href: '#empanadas', label: UI_TEXT.sections.empanadas[lang], icon: <Flame size={22} aria-hidden="true" /> },
+    { id: 'drinks', href: '#drinks', label: UI_TEXT.sections.drinks[lang], icon: <Beer size={22} aria-hidden="true" /> },
+    { id: 'menus', href: '#menus', label: UI_TEXT.sections.menus[lang], icon: <Utensils size={22} aria-hidden="true" /> },
+  ];
+  return (
+    <nav
+      aria-label={UI_TEXT.nav.main[lang]}
+      className="fixed bottom-0 inset-x-0 z-30 bg-creme/95 backdrop-blur border-t border-areia pb-[env(safe-area-inset-bottom)]"
     >
-      {icon}
-      <span className="text-[10px] tracking-tight">{label}</span>
-    </button>
+      <ul className="max-w-xl mx-auto grid grid-cols-4">
+        {items.map((item) => {
+          const active = view === item.id;
+          return (
+            <li key={item.id}>
+              <a
+                href={item.href}
+                aria-current={active ? 'page' : undefined}
+                className={cn(
+                  'press flex flex-col items-center justify-center gap-0.5 h-16 text-xs',
+                  active ? 'text-bordeaux font-bold' : 'text-azeitona hover:text-bordeaux font-medium',
+                )}
+              >
+                <span className={cn('px-4 py-1 rounded-full transition-colors duration-200', active && 'bg-areia')}>{item.icon}</span>
+                {item.label}
+              </a>
+            </li>
+          );
+        })}
+      </ul>
+    </nav>
   );
 }

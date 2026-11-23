@@ -208,7 +208,7 @@ export const EMPANADAS: Empanada[] = [
     code: 'CH',
     name: { pt: 'Chouriço e Queijo', en: 'Chorizo and Cheese', es: 'Chorizo y Queso' },
     description: {
-      pt: 'Chouriço, cebola caremelizada e mistura de queijos',
+      pt: 'Chouriço, cebola caramelizada e mistura de queijos',
       en: 'Chorizo, caramelized onion, and cheese blend',
       es: 'Chorizo, cebolla caramelizada y mezcla de quesos'
     },
@@ -349,82 +349,142 @@ export const ALLERGENS: { code: string; name: { [key in Language]: string } }[] 
   { code: 'A', name: { pt: 'Aipo', en: 'Celery', es: 'Apio' } }
 ];
 
+type T = { [key in Language]: string };
+
+/** Informação oficial do Al'Horno — alterar aqui atualiza todo o site. */
+export const CONTACT = {
+  mapsUrl: 'https://share.google/9OhowbjjeGXKDgI0F',
+  instagramHandle: '@al.horno_pt',
+  instagramUrl: 'https://www.instagram.com/al.horno_pt/',
+  email: 'alhempanadas@gmail.com',
+  uberEatsUrl: 'https://www.ubereats.com/pt/store/al-horno/9JfmUE8GWs2ds3R9k3foiA?ps=1',
+  uberEatsStore: 'Al Horno',
+  locality: 'Aldeia da Praia',
+};
+
 export const UI_TEXT = {
-  chooseLanguage: { pt: 'Selecione o idioma', en: 'Choose language', es: 'Seleccione el idioma' },
-  tagline: { pt: 'Forno a lenha', en: 'Wood-fired oven', es: 'Horno de leña' },
+  languageLabel: { pt: 'Idioma', en: 'Language', es: 'Idioma' } as T,
+  tagline: { pt: 'Empanadas artesanais', en: 'Handmade empanadas', es: 'Empanadas artesanales' } as T,
+  closed: {
+    short: { pt: 'Encerra às quartas-feiras', en: 'Closed on Wednesdays', es: 'Cerrado los miércoles' } as T,
+  },
+  nav: {
+    home: { pt: 'Início', en: 'Home', es: 'Inicio' } as T,
+    main: { pt: 'Navegação principal', en: 'Main navigation', es: 'Navegación principal' } as T,
+    back: { pt: 'Voltar ao início', en: 'Back to home', es: 'Volver al inicio' } as T,
+    skip: { pt: 'Saltar para o conteúdo', en: 'Skip to content', es: 'Saltar al contenido' } as T,
+    newWindow: { pt: '(abre noutra janela)', en: '(opens in a new window)', es: '(se abre en otra ventana)' } as T,
+  },
   sections: {
-    empanadas: { pt: 'Empanadas', en: 'Empanadas', es: 'Empanadas' },
-    classicas: { pt: 'Clássicas', en: 'Classics', es: 'Clásicas' },
-    premium: { pt: 'Premium', en: 'Premium', es: 'Premium' },
-    drinks: { pt: 'Bebidas', en: 'Drinks', es: 'Bebidas' },
-    menus: { pt: 'Menus', en: 'Combos', es: 'Menús' },
-    ubereats: { pt: 'Uber Eats', en: 'Uber Eats', es: 'Uber Eats' },
-    events: { pt: 'Festas & Eventos', en: 'Parties & Events', es: 'Fiestas y Eventos' }
+    empanadas: { pt: 'Empanadas', en: 'Empanadas', es: 'Empanadas' } as T,
+    drinks: { pt: 'Bebidas', en: 'Drinks', es: 'Bebidas' } as T,
+    menus: { pt: 'Menus', en: 'Combos', es: 'Menús' } as T,
+  },
+  home: {
+    empanadasDesc: (classic: number, premium: number): T => ({
+      pt: `${classic} clássicas e ${premium} premium, com opções de carne, peixe e vegetarianas.`,
+      en: `${classic} classics and ${premium} premium, with meat, fish and vegetarian options.`,
+      es: `${classic} clásicas y ${premium} premium, con opciones de carne, pescado y vegetarianas.`,
+    }),
+    varieties: (n: number): T => ({ pt: `${n} variedades`, en: `${n} varieties`, es: `${n} variedades` }),
+    drinksDesc: {
+      pt: 'Águas, sumos, refrigerantes, cervejas e carta de vinhos.',
+      en: 'Water, juices, soft drinks, beers and wine list.',
+      es: 'Aguas, zumos, refrescos, cervezas y carta de vinos.',
+    } as T,
+    menusDesc: {
+      pt: 'Menus de 3, 6 e 12 empanadas com bebidas, para partilhar.',
+      en: 'Combos of 3, 6 and 12 empanadas with drinks, to share.',
+      es: 'Menús de 3, 6 y 12 empanadas con bebidas, para compartir.',
+    } as T,
+    findUs: { pt: 'Onde estamos', en: 'Find us', es: 'Dónde estamos' } as T,
   },
   ubereats: {
-    title: { pt: 'Pedir no Uber Eats', en: 'Order on Uber Eats', es: 'Pedir en Uber Eats' },
-    subtitle: { pt: 'Entrega direta em sua casa', en: 'Direct delivery to your home', es: 'Entrega directa a su domicilio' },
-    badge: { pt: 'Entregas', en: 'Delivery', es: 'A domicilio' },
-    banner: { 
-      pt: 'Prefere receber em casa? Peça comodamente através do Uber Eats.', 
-      en: 'Prefer home delivery? Order comfortably via Uber Eats.', 
-      es: '¿Prefiere recibir en casa? Pida cómodamente a través de Uber Eats.' 
-    }
+    title: { pt: 'Encomendar no Uber Eats', en: 'Order on Uber Eats', es: 'Pedir en Uber Eats' } as T,
+    subtitle: {
+      pt: `Procure a loja "Al Horno" — entrega em casa`,
+      en: `Look for the "Al Horno" store — home delivery`,
+      es: `Busque la tienda "Al Horno" — entrega a domicilio`,
+    } as T,
   },
   events: {
-    title: { 
-      pt: "Al'Horno no teu Evento", 
-      en: "Al'Horno for Your Event", 
-      es: "Al'Horno en tu Evento" 
-    },
-    text: { 
-      pt: "Queres contar com as empanadas do Al'Horno na tua próxima festa, aniversário ou convívio? Preparamos fornadas especiais à medida da tua celebração.", 
-      en: "Want to have Al'Horno empanadas at your next party, birthday, or gathering? We prepare custom freshly-baked batches tailored to your celebration.", 
-      es: "¿Quieres contar con las empanadas de Al'Horno en tu próxima fiesta, cumpleaños o reunión? Preparamos horneadas especiales a la medida de tu celebración." 
-    },
-    contactCta: { 
-      pt: 'Contacta-nos por e-mail', 
-      en: 'Contact us via email', 
-      es: 'Contáctanos por email' 
-    },
-    email: 'alhempanadas@gmail.com'
+    title: { pt: 'Encomendas para eventos', en: 'Event orders', es: 'Pedidos para eventos' } as T,
+    text: {
+      pt: 'Festas, aniversários, empresas ou casamentos: preparamos fornadas à medida. Diga-nos a data, o número de pessoas e o local, e enviamos um orçamento sem compromisso.',
+      en: 'Parties, birthdays, corporate events or weddings: we bake batches to measure. Tell us the date, number of guests and location, and we will send you a no-obligation quote.',
+      es: 'Fiestas, cumpleaños, empresas o bodas: preparamos horneadas a medida. Indíquenos la fecha, el número de personas y el lugar, y le enviaremos un presupuesto sin compromiso.',
+    } as T,
+    cta: { pt: 'Pedir orçamento', en: 'Request a quote', es: 'Pedir presupuesto' } as T,
+    copy: { pt: 'Copiar e-mail', en: 'Copy email', es: 'Copiar email' } as T,
+    copied: { pt: 'E-mail copiado!', en: 'Email copied!', es: '¡Email copiado!' } as T,
+    subject: {
+      pt: "Pedido de orçamento — evento Al'Horno",
+      en: "Quote request — Al'Horno event",
+      es: "Solicitud de presupuesto — evento Al'Horno",
+    } as T,
+    body: {
+      pt: 'Olá Al\'Horno,\n\nGostaria de pedir um orçamento para um evento.\n\nData:\nNúmero de pessoas:\nLocal:\nTipo de evento:\nNome e telefone:\n\nObrigado!',
+      en: 'Hello Al\'Horno,\n\nI would like to request a quote for an event.\n\nDate:\nNumber of guests:\nLocation:\nType of event:\nName and phone:\n\nThank you!',
+      es: 'Hola Al\'Horno,\n\nMe gustaría pedir un presupuesto para un evento.\n\nFecha:\nNúmero de personas:\nLugar:\nTipo de evento:\nNombre y teléfono:\n\n¡Gracias!',
+    } as T,
   },
+  filters: {
+    label: { pt: 'Filtrar empanadas', en: 'Filter empanadas', es: 'Filtrar empanadas' } as T,
+    all: { pt: 'Todas', en: 'All', es: 'Todas' } as T,
+    classicas: { pt: 'Clássicas', en: 'Classics', es: 'Clásicas' } as T,
+    premium: { pt: 'Premium', en: 'Premium', es: 'Premium' } as T,
+    veg: { pt: 'Vegetarianas', en: 'Vegetarian', es: 'Vegetarianas' } as T,
+  },
+  tags: {
+    premium: { pt: 'Premium', en: 'Premium', es: 'Premium' } as T,
+    spicy: { pt: 'Picante', en: 'Spicy', es: 'Picante' } as T,
+    veg: { pt: 'Vegetariana', en: 'Vegetarian', es: 'Vegetariana' } as T,
+    special: { pt: 'Especial', en: 'Special', es: 'Especial' } as T,
+  },
+  allergensLabel: { pt: 'Alergénios', en: 'Allergens', es: 'Alérgenos' } as T,
+  allergensLegend: { pt: 'Legenda de alergénios', en: 'Allergen key', es: 'Leyenda de alérgenos' } as T,
+  results: (n: number): T => ({
+    pt: n === 1 ? '1 empanada' : `${n} empanadas`,
+    en: n === 1 ? '1 empanada' : `${n} empanadas`,
+    es: n === 1 ? '1 empanada' : `${n} empanadas`,
+  }),
+  menusIntro: {
+    pt: 'Combinações para uma refeição individual ou para partilhar.',
+    en: 'Combos for a meal on your own or to share.',
+    es: 'Combinaciones para una comida individual o para compartir.',
+  } as T,
   wineNote: {
-    title: { pt: 'Carta de Vinhos', en: 'Wine List', es: 'Carta de Vinos' },
-    description: { 
-      pt: 'Dispomos também de carta de vinhos. Consulte a nossa equipa ao balcão para mais informações.', 
-      en: 'We also have a wine list. Please ask our team at the counter for details.', 
-      es: 'Disponemos también de carta de vinos. Consulte a nuestro equipo en el mostrador para más información.' 
-    }
+    title: { pt: 'Carta de Vinhos', en: 'Wine List', es: 'Carta de Vinos' } as T,
+    description: {
+      pt: 'Dispomos também de carta de vinhos. Pergunte à nossa equipa ao balcão.',
+      en: 'We also have a wine list. Please ask our team at the counter.',
+      es: 'Disponemos también de carta de vinos. Pregunte a nuestro equipo en el mostrador.',
+    } as T,
   },
-  extrasTitle: {
-    pt: 'Molhos & Extras',
-    en: 'Sauces & Extras',
-    es: 'Salsas y Extras'
-  },
-  location: { 
-    pt: 'Localização', 
-    en: 'Location', 
-    es: 'Ubicación' 
-  },
-  openMaps: { 
-    pt: 'Abrir no Google Maps', 
-    en: 'Open in Google Maps', 
-    es: 'Abrir en Google Maps' 
-  },
-  prepNote: { 
-    pt: 'Cozidas diariamente no nosso forno a lenha tradicional', 
-    en: 'Baked daily in our traditional wood-fired oven', 
-    es: 'Horneadas diariamente en nuestro tradicional horno de leña' 
-  },
+  extrasTitle: { pt: 'Molhos & Extras', en: 'Sauces & Extras', es: 'Salsas y Extras' } as T,
+  prepNote: {
+    pt: 'Feitas à mão e cozidas diariamente',
+    en: 'Handmade and baked daily',
+    es: 'Hechas a mano y horneadas a diario',
+  } as T,
   allergenWarning: {
     pt: 'Todos os produtos podem conter vestígios de glúten, leite, ovo, soja, frutos de casca rija e outros alergénios devido aos métodos de confeção e manipulação.',
     en: 'All products may contain traces of gluten, milk, egg, soy, nuts and other allergens due to cooking and handling methods.',
-    es: 'Todos los produtos pueden contener trazas de gluten, leche, huevo, soja, frutos de cáscara y otros alérgenos debido a los métodos de confección y manipulación.'
-  },
+    es: 'Todos los productos pueden contener trazas de gluten, leche, huevo, soja, frutos de cáscara y otros alérgenos debido a los métodos de elaboración y manipulación.',
+  } as T,
   vatNote: {
     pt: 'Os valores apresentados já incluem IVA à taxa legal em vigor.',
     en: 'Prices include VAT at the legal rate in force.',
-    es: 'Los precios incluem IVA al tipo legal vigente.'
-  }
+    es: 'Los precios incluyen IVA al tipo legal vigente.',
+  } as T,
+  search: {
+    placeholder: { pt: 'Pesquisar pelo nome…', en: 'Search by name…', es: 'Buscar por nombre…' } as T,
+    label: { pt: 'Pesquisar empanada pelo nome', en: 'Search empanada by name', es: 'Buscar empanada por nombre' } as T,
+    clear: { pt: 'Limpar pesquisa', en: 'Clear search', es: 'Borrar búsqueda' } as T,
+    noResults: { pt: 'Nenhuma empanada encontrada para', en: 'No empanadas found for', es: 'No se encontraron empanadas para' } as T,
+    resetFilters: { pt: 'Mostrar todas', en: 'Show all', es: 'Mostrar todas' } as T,
+  },
+  footer: {
+    rights: { pt: 'Empanadas artesanais', en: 'Handmade empanadas', es: 'Empanadas artesanales' } as T,
+  },
 };

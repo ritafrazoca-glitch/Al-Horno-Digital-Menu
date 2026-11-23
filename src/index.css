@@ -1,53 +1,90 @@
 @import "tailwindcss";
 
+/* Paleta Al'Horno */
 @theme {
-  --color-brand-bg: #FAF7F2;
-  --color-brand-primary: #542216;
-  --color-brand-primary-light: #6E2D1E;
-  --color-brand-cream: #F5ECD7;
-  --color-brand-orange: #E85D04;
-  --color-brand-text: #2D1F1B;
-  --color-brand-muted: #6B5B53;
-  --color-brand-border: #E8DFD3;
-  
+  --color-preto: #111111;
+  --color-bordeaux: #4A0E14;
+  --color-bordeaux-dark: #350A0E;
+  --color-mostarda: #E8A33A;
+  --color-areia: #F2C98A;
+  --color-creme: #F3EBC8;
+  --color-cartao: #FBF6E3; /* tom mais claro do creme, para cartões */
+  --color-azeitona: #6B5A1E;
+
   --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
   --font-display: "Outfit", ui-sans-serif, system-ui, sans-serif;
 }
 
 @layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    scroll-padding-top: 5rem;
+  }
+
   body {
-    background-color: #FAF7F2;
-    color: #2D1F1B;
-    font-family: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
-    font-weight: 400;
+    background-color: var(--color-creme);
+    color: var(--color-preto);
+    font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
   }
-  
-  h1, h2, h3, h4, h5, h6 {
-    font-family: "Outfit", ui-sans-serif, system-ui, sans-serif;
+
+  h1, h2, h3, h4 {
+    font-family: var(--font-display);
+  }
+
+  /* Foco visível para teclado: bordeaux em fundos claros, mostarda em fundos escuros */
+  :focus-visible {
+    outline: 3px solid var(--color-bordeaux);
+    outline-offset: 2px;
+    border-radius: 0.5rem;
+  }
+  .on-dark :focus-visible {
+    outline-color: var(--color-mostarda);
   }
 }
 
-/* Authentic Checkered Pattern as on physical menus */
-.checkered-pattern {
-  background-image: 
-    linear-gradient(45deg, #542216 25%, transparent 25%), 
-    linear-gradient(-45deg, #542216 25%, transparent 25%), 
-    linear-gradient(45deg, transparent 75%, #542216 75%), 
-    linear-gradient(-45deg, transparent 75%, #542216 75%);
-  background-size: 14px 14px;
-  background-position: 0 0, 0 7px, 7px -7px, -7px 0px;
-  background-color: #FFFFFF;
+/* Faixa aos quadrados, como nas ementas em papel */
+.checkered {
+  background-image:
+    linear-gradient(45deg, var(--color-bordeaux) 25%, transparent 25%),
+    linear-gradient(-45deg, var(--color-bordeaux) 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, var(--color-bordeaux) 75%),
+    linear-gradient(-45deg, transparent 75%, var(--color-bordeaux) 75%);
+  background-size: 12px 12px;
+  background-position: 0 0, 0 6px, 6px -6px, -6px 0;
+  background-color: var(--color-creme);
 }
 
-.checkered-pattern-sm {
-  background-image: 
-    linear-gradient(45deg, #542216 25%, transparent 25%), 
-    linear-gradient(-45deg, #542216 25%, transparent 25%), 
-    linear-gradient(45deg, transparent 75%, #542216 75%), 
-    linear-gradient(-45deg, transparent 75%, #542216 75%);
-  background-size: 10px 10px;
-  background-position: 0 0, 0 5px, 5px -5px, -5px 0px;
-  background-color: #FAF7F2;
-}
+.scrollbar-none::-webkit-scrollbar { display: none; }
+.scrollbar-none { scrollbar-width: none; }
 
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+.fade-in { animation: fade-in 0.25s ease-out both; }
+
+/* Cartões a aparecer em cascata (um a um) */
+.stagger > * { animation: fade-in 0.35s ease-out both; }
+.stagger > *:nth-child(2) { animation-delay: 40ms; }
+.stagger > *:nth-child(3) { animation-delay: 80ms; }
+.stagger > *:nth-child(4) { animation-delay: 120ms; }
+.stagger > *:nth-child(5) { animation-delay: 160ms; }
+.stagger > *:nth-child(6) { animation-delay: 200ms; }
+.stagger > *:nth-child(7) { animation-delay: 240ms; }
+.stagger > *:nth-child(n+8) { animation-delay: 280ms; }
+
+/* Resposta ao toque: o botão encolhe ligeiramente quando se carrega */
+.press {
+  transition: transform 0.12s ease-out, background-color 0.15s, border-color 0.15s, color 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+.press:active { transform: scale(0.97); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
